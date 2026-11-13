@@ -1,0 +1,3108 @@
+﻿<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบขออนุญาตใช้รถส่วนกลาง</title>
+  <base target="_top">
+
+  <!-- Google Fonts: Prompt & K2D -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=K2D:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'K2D', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome 6.5 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- jQuery & DataTables -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+  <style>
+    body {
+      font-family: 'Prompt', 'K2D', sans-serif;
+    }
+    /* DataTables Custom Polish */
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.875rem;
+      outline: none;
+    }
+    .dataTables_wrapper .dataTables_filter input:focus,
+    .dataTables_wrapper .dataTables_length select:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    table.dataTable thead th {
+      background-color: #f8fafc;
+      color: #334155;
+      font-weight: 600;
+      border-bottom: 2px solid #e2e8f0 !important;
+      padding: 10px 12px;
+    }
+    table.dataTable tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+    }
+    table.dataTable.no-footer {
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      border: 1px solid #2563eb !important;
+      border-radius: 0.375rem;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+      background: #dbeafe !important;
+      color: #1e40af !important;
+      border: 1px solid #bfdbfe !important;
+      border-radius: 0.375rem;
+    }
+    /* Modal Backdrop Transitions */
+    .modal-backdrop-custom {
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    /* Hide scrollbar for tabs */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-800 antialiased bg-slate-50 flex flex-col">
+
+  <!-- ========================================== -->
+  <!-- 1. FULLSCREEN LOADING SPINNER OVERLAY -->
+  <!-- ========================================== -->
+  <div id="spinnerLoadingModal" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-backdrop-custom transition-opacity duration-300">
+    <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm mx-4 transform transition-all">
+      <div class="relative w-16 h-16 mb-4">
+        <div class="w-16 h-16 rounded-full border-4 border-brand-100 border-t-brand-600 animate-spin"></div>
+        <div class="absolute inset-0 flex items-center justify-center text-brand-600">
+          <i class="fa-solid fa-car text-xl"></i>
+        </div>
+      </div>
+      <h3 class="text-base font-semibold text-slate-800" id="spinnerTextTitle">กำลังประมวลผล...</h3>
+      <p class="text-xs text-slate-500 mt-1" id="spinnerTextSub">โปรดรอสักครู่ ระบบกำลังสื่อสารกับฐานข้อมูล</p>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. LOGIN PAGE VIEW (p_login) -->
+  <!-- ========================================== -->
+  <div id="p_login" class="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
+    <div class="max-w-4xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 grid grid-cols-1 md:grid-cols-2">
+      
+      <!-- Left side: Login form -->
+      <div class="p-8 sm:p-10 flex flex-col justify-between">
+        <div>
+          <!-- Logo & Organization Header -->
+          <div class="text-center mb-6">
+            <div id="showLogo" class="inline-block mb-3 transition-transform hover:scale-105 duration-300">
+              <div class="w-20 h-20 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto text-brand-600 text-3xl shadow-inner">
+                <i class="fa-solid fa-car-side"></i>
+              </div>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">ระบบขออนุญาตใช้รถ</h1>
+            <p id="organizationName" class="text-sm font-medium text-brand-700 mt-1"></p>
+            <p id="organizationAddress" class="text-xs text-slate-500 mt-0.5"></p>
+          </div>
+
+          <!-- Login Form -->
+          <form id="loginForm" onsubmit="login(this, event)" class="space-y-4">
+            <div>
+              <label for="username" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อผู้ใช้งาน (Username)</label>
+              <div class="relative rounded-xl shadow-sm">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <input type="text" id="username" name="username" required
+                  class="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all placeholder:text-slate-400"
+                  placeholder="กรอกชื่อผู้ใช้งาน">
+              </div>
+            </div>
+
+            <div>
+              <label for="password" class="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่าน (Password)</label>
+              <div class="relative rounded-xl shadow-sm">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <i class="fa-solid fa-lock"></i>
+                </div>
+                <input type="password" id="password" name="password" required
+                  class="block w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all placeholder:text-slate-400"
+                  placeholder="••••••••">
+                <button type="button" onclick="togglePasswordVisibility('password', this)" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" id="btnLogin"
+              class="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.98] transition-all duration-150">
+              <i class="fa-solid fa-right-to-bracket"></i>
+              เข้าสู่ระบบ
+            </button>
+          </form>
+        </div>
+
+        <!-- Admin Contact Info Card -->
+        <div class="mt-8 pt-6 border-t border-slate-100 bg-slate-50/70 p-4 rounded-2xl flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-100 text-brand-700 flex items-center justify-center flex-shrink-0 text-base">
+            <i class="fa-solid fa-headset"></i>
+          </div>
+          <div class="text-xs text-slate-600 flex-1">
+            <div class="font-semibold text-slate-800">ติดต่อผู้ดูแลระบบ</div>
+            <div id="adminName" class="text-slate-600 truncate"></div>
+            <div id="adminTel" class="text-brand-600 font-medium">
+              <a id="phoneLink" href="tel:" class="hover:underline flex items-center gap-1 mt-0.5">
+                <i class="fa-solid fa-phone text-[10px]"></i>
+                <span>เบอร์โทรศัพท์</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right side: Branding Hero Image -->
+      <div id="showLoginImage" class="hidden md:flex bg-gradient-to-tr from-brand-700 to-indigo-800 relative items-center justify-center p-8 overflow-hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-overlay"></div>
+        <div class="relative z-10 text-white text-center max-w-xs space-y-4">
+          <div class="inline-flex p-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
+            <i class="fa-solid fa-shield-halved text-5xl text-blue-200"></i>
+          </div>
+          <h2 class="text-xl font-bold">ระบบบริหารยานพาหนะ</h2>
+          <p class="text-xs text-blue-100 leading-relaxed">
+            จองรถส่วนกลาง บันทึกการเดินทาง จัดการเบิกจ่ายน้ำมัน และรายงานผลอย่างแม่นยำ ปลอดภัย สะดวกรวดเร็ว
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 3. MAIN APPLICATION CONTAINER (contentDiv) -->
+  <!-- ========================================== -->
+  <div id="contentDiv" class="flex-1 flex flex-col hidden min-h-screen">
+    
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          
+          <!-- Left: Menu Trigger & App Brand -->
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="toggleSidebar(true)" 
+              class="p-2 rounded-xl text-slate-600 hover:text-brand-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+              <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+            <div class="flex items-center gap-2">
+              <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+                <i class="fa-solid fa-car text-base"></i>
+              </div>
+              <div>
+                <span class="text-base font-bold text-slate-900 tracking-tight hidden sm:inline">ระบบขออนุญาตใช้รถ</span>
+                <span class="text-xs text-brand-600 font-medium block" id="headerOrgName"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: User Pill & Quick Actions -->
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2.5 bg-slate-50 border border-slate-200/80 rounded-full py-1.5 px-3.5">
+              <div class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold overflow-hidden border border-brand-200" id="headerAvatarContainer">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <span id="usernameShow" class="text-xs font-semibold text-slate-700 truncate max-w-[150px] sm:max-w-xs">ผู้ใช้งาน</span>
+            </div>
+
+            <button type="button" onclick="logout()" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 hover:text-rose-700 transition-colors">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              <span class="hidden sm:inline">ออกจากระบบ</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- OFFCANVAS SIDEBAR MENU DRAWER -->
+    <div id="offcanvasMenuScrolling" class="fixed inset-0 z-40 hidden">
+      <!-- Backdrop -->
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="toggleSidebar(false)"></div>
+
+      <!-- Drawer Content -->
+      <div class="fixed inset-y-0 left-0 max-w-xs w-full bg-white shadow-2xl flex flex-col z-50 transform transition-transform duration-300">
+        
+        <!-- Drawer Header -->
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center text-sm shadow">
+              <i class="fa-solid fa-bars-staggered"></i>
+            </div>
+            <h2 class="text-base font-bold text-slate-800">เมนูการทำงาน</h2>
+          </div>
+          <button type="button" onclick="toggleSidebar(false)" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-6" id="menuTab">
+          
+          <!-- Section 1: Data Entry Forms -->
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2" id="cat1Label">
+              แบบบันทึกข้อมูล
+            </div>
+            <div class="space-y-1">
+              <button id="tab1" onclick="navTabClick(1)" class="sidebar-tab-btn active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-car-side w-5 text-center text-slate-500"></i>
+                <span>ขออนุญาตใช้รถส่วนกลาง</span>
+              </button>
+              <button id="tab2" onclick="navTabClick(2)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-file-pen w-5 text-center text-slate-500"></i>
+                <span>บันทึกการใช้รถ</span>
+              </button>
+              <button id="tab3" onclick="navTabClick(3)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-car-burst w-5 text-center text-slate-500"></i>
+                <span>รายงานอุบัติเหตุ</span>
+              </button>
+              <button id="tab4" onclick="navTabClick(4)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-screwdriver-wrench w-5 text-center text-slate-500"></i>
+                <span>รายละเอียดการซ่อมบำรุง</span>
+              </button>
+              <button id="tab5" onclick="navTabClick(5)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-gas-pump w-5 text-center text-slate-500"></i>
+                <span>บันทึกการเบิกน้ำมัน</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 2: Approvals -->
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2">
+              การอนุมัติ
+            </div>
+            <div class="space-y-1">
+              <button id="tab6" onclick="navTabClick(6)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-circle-check w-5 text-center text-slate-500"></i>
+                <span>อนุญาตให้ใช้รถ</span>
+              </button>
+              <button id="tab7" onclick="navTabClick(7)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-stamp w-5 text-center text-slate-500"></i>
+                <span>อนุมัติการเบิกน้ำมัน</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 3: Profile & Admin Management -->
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2">
+              ผู้ใช้และการตั้งค่า
+            </div>
+            <div class="space-y-1">
+              <button id="tab8" onclick="navTabClick(8)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-user w-5 text-center text-slate-500"></i>
+                <span>ข้อมูลส่วนตัว</span>
+              </button>
+              <button id="tab9" onclick="navTabClick(9)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-user-gear w-5 text-center text-slate-500"></i>
+                <span>ข้อมูลผู้ใช้งานระบบ</span>
+              </button>
+              <button id="tab10" onclick="navTabClick(10)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-car-on w-5 text-center text-slate-500"></i>
+                <span>ข้อมูลรถในระบบ</span>
+              </button>
+              <button id="tab11" onclick="navTabClick(11)" class="sidebar-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-colors text-left">
+                <i class="fa-solid fa-gears w-5 text-center text-slate-500"></i>
+                <span>ตั้งค่าข้อมูลทั่วไป</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 4: Reports (External Google Sheets) -->
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2">
+              รายงานระบบ (Google Sheets)
+            </div>
+            <div class="space-y-1">
+              <button id="tab13" onclick="reportClick(1)" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-left">
+                <span class="flex items-center gap-3">
+                  <i class="fa-solid fa-table w-5 text-center text-emerald-600"></i>
+                  <span>รถส่วนกลาง / รถรับรอง</span>
+                </span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-400"></i>
+              </button>
+              <button id="tab14" onclick="reportClick(2)" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-left">
+                <span class="flex items-center gap-3">
+                  <i class="fa-solid fa-file-excel w-5 text-center text-emerald-600"></i>
+                  <span>รายงานบันทึกการใช้รถ</span>
+                </span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-400"></i>
+              </button>
+              <button id="tab15" onclick="reportClick(3)" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-left">
+                <span class="flex items-center gap-3">
+                  <i class="fa-solid fa-wrench w-5 text-center text-emerald-600"></i>
+                  <span>รายละเอียดการซ่อมบำรุง</span>
+                </span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-400"></i>
+              </button>
+              <button id="tab16" onclick="reportClick(5)" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-left">
+                <span class="flex items-center gap-3">
+                  <i class="fa-solid fa-clipboard-list w-5 text-center text-emerald-600"></i>
+                  <span>การจัดซื้อน้ำมันเชื้อเพลิง</span>
+                </span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-400"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Drawer Footer: Logout -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50">
+          <button type="button" onclick="logout()" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors border border-rose-200">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>ออกจากระบบ</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+      <!-- ========================================== -->
+      <!-- TAB 1: ขออนุญาตใช้รถส่วนกลาง (แบบ 3) -->
+      <!-- ========================================== -->
+      <div id="p_tab1" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-car-side"></i>
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-slate-900">ขออนุญาตใช้รถส่วนกลาง (แบบ 3)</h2>
+                <p class="text-xs text-slate-500">กรอกข้อมูลเพื่อส่งคำร้องขอใช้ยานพาหนะของหน่วยงาน</p>
+              </div>
+            </div>
+          </div>
+
+          <form id="carUsagePermissionRequestForm" onsubmit="carUsagePermissionRequestFormSubmit(this)" class="p-6 sm:p-8 space-y-6">
+            <input type="hidden" name="carUserPermissionSignature" id="carUserPermissionSignature">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div class="md:col-span-2">
+                <label for="dearHeaderPermission" class="block text-xs font-semibold text-slate-700 mb-1.5">เรียน <span class="text-rose-500">*</span></label>
+                <input type="text" name="dearHeaderPermission" id="dearHeaderPermission" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all">
+              </div>
+              <div>
+                <label for="sectionHeaderPermission" class="block text-xs font-semibold text-slate-700 mb-1.5">กลุ่ม / งาน / สาขาวิชา <span class="text-rose-500">*</span></label>
+                <input type="text" name="sectionHeaderPermission" id="sectionHeaderPermission" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label for="carUserPermissionName" class="block text-xs font-semibold text-slate-700 mb-1.5">ชื่อ - สกุล ผู้ขออนุญาต</label>
+                <input type="text" name="carUserPermissionName" id="carUserPermissionName" required readonly
+                  class="w-full text-sm bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-600 cursor-not-allowed">
+              </div>
+              <div>
+                <label for="carUserPermissionPosition" class="block text-xs font-semibold text-slate-700 mb-1.5">ตำแหน่ง</label>
+                <input type="text" name="carUserPermissionPosition" id="carUserPermissionPosition" required readonly
+                  class="w-full text-sm bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-600 cursor-not-allowed">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label for="carPermissionRegisNumber" class="block text-xs font-semibold text-slate-700 mb-1.5">รถหมายเลขทะเบียน <span class="text-rose-500">*</span></label>
+                <div class="flex gap-2">
+                  <select name="carPermissionRegisNumber" id="carPermissionRegisNumber" required
+                    class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all">
+                    <option value="">เลือกหมายเลขทะเบียน</option>
+                  </select>
+                  <button type="button" onclick="openQueueTable(document.getElementById('carPermissionRegisNumber').value)"
+                    class="px-3.5 py-2.5 bg-brand-50 text-brand-600 border border-brand-200 rounded-xl hover:bg-brand-100 transition-colors flex-shrink-0" title="ตรวจสอบตารางคิวรถ">
+                    <i class="fa-solid fa-calendar-days"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label for="mileageBeforeDeparture3" class="block text-xs font-semibold text-slate-700 mb-1.5">เลขไมล์ก่อนออกเดินทาง (กม.)</label>
+                <input type="number" name="mileageBeforeDeparture3" id="mileageBeforeDeparture3"
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all"
+                  placeholder="0">
+              </div>
+              <div>
+                <label for="peopleNumberPermission" class="block text-xs font-semibold text-slate-700 mb-1.5">จำนวนผู้ร่วมเดินทาง (คน) <span class="text-rose-500">*</span></label>
+                <input type="number" name="peopleNumberPermission" id="peopleNumberPermission" min="1" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all"
+                  placeholder="1">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label for="destinationPermission" class="block text-xs font-semibold text-slate-700 mb-1.5">สถานที่ไปปฏิบัติราชการ <span class="text-rose-500">*</span></label>
+                <input type="text" name="destinationPermission" id="destinationPermission" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all"
+                  placeholder="ระบุสถานที่">
+              </div>
+              <div>
+                <label for="missionPermission" class="block text-xs font-semibold text-slate-700 mb-1.5">ภารกิจ / เพื่อไปปฏิบัติงาน <span class="text-rose-500">*</span></label>
+                <input type="text" name="missionPermission" id="missionPermission" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all"
+                  placeholder="ระบุรายละเอียดงาน">
+              </div>
+            </div>
+
+            <!-- Departure & Arrived Dates -->
+            <div class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Depart -->
+              <div class="space-y-3">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  กำหนดการออกเดินทาง
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="departureDatePermission" class="block text-[11px] text-slate-500 mb-1">วันที่ <span class="text-rose-500">*</span></label>
+                    <input type="date" name="departureDatePermission" id="departureDatePermission" required
+                      class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                  </div>
+                  <div>
+                    <label for="departureTimePermission" class="block text-[11px] text-slate-500 mb-1">เวลา <span class="text-rose-500">*</span></label>
+                    <input type="time" name="departureTimePermission" id="departureTimePermission" required
+                      class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Arrived -->
+              <div class="space-y-3">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
+                  <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  กำหนดการเดินทางกลับ
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="arrivedDatePermission" class="block text-[11px] text-slate-500 mb-1">วันที่ <span class="text-rose-500">*</span></label>
+                    <input type="date" name="arrivedDatePermission" id="arrivedDatePermission" required
+                      class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                  </div>
+                  <div>
+                    <label for="arrivedTimePermission" class="block text-[11px] text-slate-500 mb-1">เวลา <span class="text-rose-500">*</span></label>
+                    <input type="time" name="arrivedTimePermission" id="arrivedTimePermission" required
+                      class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+              <button type="submit"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all active:scale-95">
+                <i class="fa-solid fa-paper-plane"></i>
+                บันทึกและส่งคำร้อง
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: บันทึกการใช้รถ (แบบ 4) -->
+      <!-- ========================================== -->
+      <div id="p_tab2" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-file-pen"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">บันทึกการใช้รถ (แบบ 4)</h2>
+              <p class="text-xs text-slate-500">บันทึกเลขไมล์และรายละเอียดการเดินทางจริงหลังการใช้งาน</p>
+            </div>
+          </div>
+
+          <form id="carUsageForm" onsubmit="carUsageFormSubmit(this)" class="p-6 sm:p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label for="carRegisNumber" class="block text-xs font-semibold text-slate-700 mb-1.5">รถหมายเลขทะเบียน <span class="text-rose-500">*</span></label>
+                <select name="carRegisNumber" id="carRegisNumber" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all">
+                  <option value="">เลือกหมายเลขทะเบียน</option>
+                </select>
+              </div>
+              <div>
+                <label for="requestId" class="block text-xs font-semibold text-slate-700 mb-1.5">เลขที่คำขอ (Request ID)</label>
+                <input type="text" name="requestId" id="requestId"
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all"
+                  placeholder="เช่น REQ-XXXX">
+              </div>
+              <div>
+                <label for="destinationLocation" class="block text-xs font-semibold text-slate-700 mb-1.5">สถานที่ไป <span class="text-rose-500">*</span></label>
+                <input type="text" name="destinationLocation" id="destinationLocation" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all">
+              </div>
+            </div>
+
+            <!-- Departure details -->
+            <div class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label for="departureDate" class="block text-xs font-semibold text-slate-700 mb-1">วันที่ออกเดินทาง <span class="text-rose-500">*</span></label>
+                <input type="date" name="departureDate" id="departureDate" required
+                  class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+              <div>
+                <label for="departureTime" class="block text-xs font-semibold text-slate-700 mb-1">เวลาออกเดินทาง <span class="text-rose-500">*</span></label>
+                <input type="time" name="departureTime" id="departureTime" required
+                  class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+              <div>
+                <label for="mileageBeforeDeparture" class="block text-xs font-semibold text-slate-700 mb-1">เลขไมล์เมื่อออกเดินทาง <span class="text-rose-500">*</span></label>
+                <input type="number" name="mileageBeforeDeparture" id="mileageBeforeDeparture" required
+                  class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2" placeholder="0">
+              </div>
+            </div>
+
+            <!-- Arrival details -->
+            <div class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label for="arrivedDate" class="block text-xs font-semibold text-slate-700 mb-1">วันที่กลับถึง <span class="text-rose-500">*</span></label>
+                <input type="date" name="arrivedDate" id="arrivedDate" required
+                  class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+              <div>
+                <label for="arrivedTime" class="block text-xs font-semibold text-slate-700 mb-1">เวลากลับถึง <span class="text-rose-500">*</span></label>
+                <input type="time" name="arrivedTime" id="arrivedTime" required
+                  class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+              <div>
+                <label for="mileageBeforeArrived" class="block text-xs font-semibold text-slate-700 mb-1">เลขไมล์เมื่อกลับถึง <span class="text-rose-500">*</span></label>
+                <input type="number" name="mileageBeforeArrived" id="mileageBeforeArrived" required
+                  class="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2" placeholder="0">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label for="carUser" class="block text-xs font-semibold text-slate-700 mb-1.5">ผู้ขอใช้รถ <span class="text-rose-500">*</span></label>
+                <input type="text" name="carUser" id="carUser" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4">
+              </div>
+              <div>
+                <label for="carDriver" class="block text-xs font-semibold text-slate-700 mb-1.5">พนักงานขับรถ <span class="text-rose-500">*</span></label>
+                <input type="text" name="carDriver" id="carDriver" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4">
+              </div>
+            </div>
+
+            <div>
+              <label for="carUsageNote" class="block text-xs font-semibold text-slate-700 mb-1.5">หมายเหตุ</label>
+              <textarea name="carUsageNote" id="carUsageNote" rows="2"
+                class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-4"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label for="carUsageRecorderName" class="block text-xs font-semibold text-slate-700 mb-1.5">ผู้บันทึกข้อมูล</label>
+                <input type="text" name="carUsageRecorderName" id="carUsageRecorderName" readonly
+                  class="w-full text-sm bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-600">
+              </div>
+              <div>
+                <label for="carUsageRecorderPosition" class="block text-xs font-semibold text-slate-700 mb-1.5">ตำแหน่ง</label>
+                <input type="text" name="carUsageRecorderPosition" id="carUsageRecorderPosition" readonly
+                  class="w-full text-sm bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-600">
+              </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+              <button type="submit"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all active:scale-95">
+                <i class="fa-solid fa-floppy-disk"></i>
+                บันทึกการใช้รถ
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 3: รายงานอุบัติเหตุ (แบบ 5) -->
+      <!-- ========================================== -->
+      <div id="p_tab3" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-car-burst"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">รายงานอุบัติเหตุ (แบบ 5)</h2>
+              <p class="text-xs text-slate-500">บันทึกรายงานเหตุการณ์อุบัติเหตุ คู่กรณี ผู้บาดเจ็บ และพยาน</p>
+            </div>
+          </div>
+
+          <form id="carAccidentForm" onsubmit="carAccidentFormSubmit(this)" class="p-6 sm:p-8 space-y-8">
+            
+            <!-- ส่วนที่ 1: ข้อมูลทั่วไป -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                ข้อมูลอุบัติเหตุเบื้องต้น
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label for="dearHeader" class="block text-xs font-semibold text-slate-700 mb-1">เรียน <span class="text-rose-500">*</span></label>
+                  <input type="text" name="dearHeader" id="dearHeader" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="accidentCarRegisNumber" class="block text-xs font-semibold text-slate-700 mb-1">รถหมายเลขทะเบียน <span class="text-rose-500">*</span></label>
+                  <select name="accidentCarRegisNumber" id="accidentCarRegisNumber" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                    <option value="">เลือกหมายเลขทะเบียน</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="accidentLocation" class="block text-xs font-semibold text-slate-700 mb-1">สถานที่เกิดเหตุ <span class="text-rose-500">*</span></label>
+                  <input type="text" name="accidentLocation" id="accidentLocation" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label for="accidentDate" class="block text-xs font-semibold text-slate-700 mb-1">วันที่เกิดเหตุ <span class="text-rose-500">*</span></label>
+                  <input type="date" name="accidentDate" id="accidentDate" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="accidentTime" class="block text-xs font-semibold text-slate-700 mb-1">เวลาเกิดเหตุ <span class="text-rose-500">*</span></label>
+                  <input type="time" name="accidentTime" id="accidentTime" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="accidentCarSpeed" class="block text-xs font-semibold text-slate-700 mb-1">ความเร็วขณะเกิดเหตุ (กม./ชม.)</label>
+                  <input type="number" name="accidentCarSpeed" id="accidentCarSpeed" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="accidentFrom" class="block text-xs font-semibold text-slate-700 mb-1">เดินทางมาจาก</label>
+                  <input type="text" name="accidentFrom" id="accidentFrom" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="accidentDestination" class="block text-xs font-semibold text-slate-700 mb-1">กำลังจะเดินทางไปที่</label>
+                  <input type="text" name="accidentDestination" id="accidentDestination" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+
+              <div>
+                <label for="accidentDamage" class="block text-xs font-semibold text-slate-700 mb-1">ความเสียหายของรถราชการ <span class="text-rose-500">*</span></label>
+                <textarea name="accidentDamage" id="accidentDamage" rows="2" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2"></textarea>
+              </div>
+            </div>
+
+            <!-- ส่วนที่ 2: ฝ่ายตรงข้าม / คู่กรณี -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                พาหนะหรือทรัพย์สินฝ่ายตรงข้าม
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label for="opponentCarName" class="block text-xs text-slate-700 mb-1">ยี่ห้อ / ประเภทรถ</label>
+                  <input type="text" name="opponentCarName" id="opponentCarName" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="opponentCarRegisNumber" class="block text-xs text-slate-700 mb-1">หมายเลขทะเบียน</label>
+                  <input type="text" name="opponentCarRegisNumber" id="opponentCarRegisNumber" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="opponentCarOwnerName" class="block text-xs text-slate-700 mb-1">ชื่อเจ้าของรถ</label>
+                  <input type="text" name="opponentCarOwnerName" id="opponentCarOwnerName" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label for="opponentCarDriver" class="block text-xs text-slate-700 mb-1">ชื่อผู้ขับขี่</label>
+                  <input type="text" name="opponentCarDriver" id="opponentCarDriver" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="opponentCarDriverAge" class="block text-xs text-slate-700 mb-1">อายุ (ปี)</label>
+                  <input type="number" name="opponentCarDriverAge" id="opponentCarDriverAge" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="opponentCarDriverLicense" class="block text-xs text-slate-700 mb-1">เลขที่ใบขับขี่</label>
+                  <input type="text" name="opponentCarDriverLicense" id="opponentCarDriverLicense" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+
+              <div>
+                <label for="opponentCarDriverAddress" class="block text-xs text-slate-700 mb-1">ที่อยู่ผู้ขับขี่ฝ่ายตรงข้าม</label>
+                <input type="text" name="opponentCarDriverAddress" id="opponentCarDriverAddress" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="opponentAccidentCause" class="block text-xs text-slate-700 mb-1">สาเหตุตามทัศนะของคู่กรณี</label>
+                  <textarea name="opponentAccidentCause" id="opponentAccidentCause" rows="2" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2"></textarea>
+                </div>
+                <div>
+                  <label for="opponentAccidentDamage" class="block text-xs text-slate-700 mb-1">ความเสียหายของทรัพย์สินคู่กรณี</label>
+                  <textarea name="opponentAccidentDamage" id="opponentAccidentDamage" rows="2" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- ส่วนที่ 3: ผู้บาดเจ็บ & พยาน & เจ้าหน้าที่ -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                ผู้บาดเจ็บ ผู้สอบสวน และพยาน
+              </h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input type="text" name="injuredPersonName1" id="injuredPersonName1" placeholder="ชื่อผู้บาดเจ็บคนที่ 1" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="number" name="injuredPersonAge1" id="injuredPersonAge1" placeholder="อายุ" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="text" name="injuredPersonAddress1" id="injuredPersonAddress1" placeholder="ที่อยู่ผู้บาดเจ็บคนที่ 1" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input type="text" name="injuredPersonName2" id="injuredPersonName2" placeholder="ชื่อผู้บาดเจ็บคนที่ 2" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="number" name="injuredPersonAge2" id="injuredPersonAge2" placeholder="อายุ" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="text" name="injuredPersonAddress2" id="injuredPersonAddress2" placeholder="ที่อยู่ผู้บาดเจ็บคนที่ 2" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" name="policeName" id="policeName" placeholder="ชื่อพนักงานสอบสวน (ร้อยเวร)" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="text" name="policeStation" id="policeStation" placeholder="สถานีตำรวจภูธร (สภ.)" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input type="text" name="witnessName1" id="witnessName1" placeholder="ชื่อพยานคนที่ 1" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="number" name="witnessAge1" id="witnessAge1" placeholder="อายุพยานคนที่ 1" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="text" name="witnessAddress1" id="witnessAddress1" placeholder="ที่อยู่พยานคนที่ 1" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input type="text" name="witnessName2" id="witnessName2" placeholder="ชื่อพยานคนที่ 2" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="number" name="witnessAge2" id="witnessAge2" min="0" placeholder="อายุพยานคนที่ 2" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                <input type="text" name="witnessAddress2" id="witnessAddress2" placeholder="ที่อยู่พยานคนที่ 2" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              </div>
+
+              <div>
+                <label for="caseOutcome" class="block text-xs font-semibold text-slate-700 mb-1">ผลของคดีเบื้องต้น</label>
+                <textarea name="caseOutcome" id="caseOutcome" rows="2" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2"></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label for="carAccidentRecorderName" class="block text-xs font-semibold text-slate-700 mb-1">ผู้รายงาน</label>
+                  <input type="text" name="carAccidentRecorderName" id="carAccidentRecorderName" readonly class="w-full text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-slate-600">
+                </div>
+                <div>
+                  <label for="carAccidentRecorderPosition" class="block text-xs font-semibold text-slate-700 mb-1">ตำแหน่ง</label>
+                  <input type="text" name="carAccidentRecorderPosition" id="carAccidentRecorderPosition" readonly class="w-full text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-slate-600">
+                </div>
+                <div>
+                  <label for="carAccidentRecorderEmail" class="block text-xs font-semibold text-slate-700 mb-1">อีเมล</label>
+                  <input type="email" name="carAccidentRecorderEmail" id="carAccidentRecorderEmail" readonly class="w-full text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-slate-600">
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+              <button type="submit"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all active:scale-95">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                บันทึกรายงานอุบัติเหตุ
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 4: รายละเอียดการซ่อมบำรุง (แบบ 6) -->
+      <!-- ========================================== -->
+      <div id="p_tab4" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-screwdriver-wrench"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">รายละเอียดการซ่อมบำรุง (แบบ 6)</h2>
+              <p class="text-xs text-slate-500">บันทึกประวัติการเปลี่ยนอะไหล่ ตรวจเช็ก และค่าใช้จ่ายซ่อมบำรุง</p>
+            </div>
+          </div>
+
+          <form id="carMaintenanceDetailsForm" onsubmit="carMaintenanceDetailsFormSubmit(this)" class="p-6 sm:p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label for="carRegisNumberMaintenance" class="block text-xs font-semibold text-slate-700 mb-1.5">รถหมายเลขทะเบียน <span class="text-rose-500">*</span></label>
+                <select name="carRegisNumberMaintenance" id="carRegisNumberMaintenance" required
+                  class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+                  <option value="">เลือกหมายเลขทะเบียน</option>
+                </select>
+              </div>
+              <div>
+                <label for="mileageMaintenance" class="block text-xs font-semibold text-slate-700 mb-1.5">เลขไมล์เมื่อเข้าซ่อม (กม.) <span class="text-rose-500">*</span></label>
+                <input type="number" name="mileageMaintenance" id="mileageMaintenance" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+              </div>
+              <div>
+                <label for="inspectionDate" class="block text-xs font-semibold text-slate-700 mb-1.5">วันที่ตรวจสอบ / ซ่อม <span class="text-rose-500">*</span></label>
+                <input type="date" name="inspectionDate" id="inspectionDate" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+              </div>
+            </div>
+
+            <div>
+              <label for="maintenanceDetails" class="block text-xs font-semibold text-slate-700 mb-1.5">รายการซ่อมแซม / เปลี่ยนอะไหล่ <span class="text-rose-500">*</span></label>
+              <textarea name="maintenanceDetails" id="maintenanceDetails" rows="3" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label for="bahtMoneyMaintenance" class="block text-xs font-semibold text-slate-700 mb-1.5">จำนวนเงิน (บาท) <span class="text-rose-500">*</span></label>
+                <input type="number" name="bahtMoneyMaintenance" id="bahtMoneyMaintenance" required min="0" step="0.01" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5" placeholder="0.00">
+              </div>
+              <div>
+                <label for="maintenanceLocation" class="block text-xs font-semibold text-slate-700 mb-1.5">อู่ / ศูนย์บริการ / ร้านซ่อม <span class="text-rose-500">*</span></label>
+                <input type="text" name="maintenanceLocation" id="maintenanceLocation" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+              </div>
+              <div>
+                <label for="carMaintenanceNote" class="block text-xs font-semibold text-slate-700 mb-1.5">หมายเหตุ</label>
+                <input type="text" name="carMaintenanceNote" id="carMaintenanceNote" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label for="carMaintenanceRecorderName" class="block text-xs font-semibold text-slate-700 mb-1.5">ผู้บันทึก</label>
+                <input type="text" name="carMaintenanceRecorderName" id="carMaintenanceRecorderName" readonly class="w-full text-sm bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-600">
+              </div>
+              <div>
+                <label for="carMaintenanceRecorderPosition" class="block text-xs font-semibold text-slate-700 mb-1.5">ตำแหน่ง</label>
+                <input type="text" name="carMaintenanceRecorderPosition" id="carMaintenanceRecorderPosition" readonly class="w-full text-sm bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-600">
+              </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+              <button type="submit"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all active:scale-95">
+                <i class="fa-solid fa-wrench"></i>
+                บันทึกการซ่อมบำรุง
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 5: บันทึกการเบิกน้ำมัน -->
+      <!-- ========================================== -->
+      <div id="p_tab5" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-gas-pump"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">บันทึกการเบิกน้ำมันเชื้อเพลิง</h2>
+              <p class="text-xs text-slate-500">บันทึกรายการจัดซื้อและขอเบิกจ่ายน้ำมันเชื้อเพลิง</p>
+            </div>
+          </div>
+
+          <form id="oilWithdrawForm" onsubmit="oilWithdrawFormSubmit(this)" class="p-6 sm:p-8 space-y-6">
+            <input type="hidden" name="oilWithdrawerSignature" id="oilWithdrawerSignature">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label for="oilWithdrawDate" class="block text-xs font-semibold text-slate-700 mb-1.5">วันที่เบิก <span class="text-rose-500">*</span></label>
+                <input type="date" name="oilWithdrawDate" id="oilWithdrawDate" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+              </div>
+              <div>
+                <label for="oilWithdrawDocumentType" class="block text-xs font-semibold text-slate-700 mb-1.5">ประเภทเอกสาร <span class="text-rose-500">*</span></label>
+                <select name="oilWithdrawDocumentType" id="oilWithdrawDocumentType" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+                  <option value="ใบสั่งจ่ายน้ำมัน">ใบสั่งจ่ายน้ำมัน</option>
+                  <option value="ใบเสร็จรับเงิน">ใบเสร็จรับเงิน</option>
+                  <option value="ใบกำกับภาษี">ใบกำกับภาษี</option>
+                </select>
+              </div>
+              <div>
+                <label for="oilWithdrawMachineType" class="block text-xs font-semibold text-slate-700 mb-1.5">เครื่องจักร / ทะเบียนรถ <span class="text-rose-500">*</span></label>
+                <select name="oilWithdrawMachineType" id="oilWithdrawMachineType" onchange="checkMachineType()" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+                  <option value="">เลือกเครื่องจักร / รถยนต์</option>
+                  <option value="อื่น ๆ">อื่น ๆ (ระบุ)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Dynamic field for other machine type -->
+            <div id="oilWithdrawMachineTypeOtherDiv" class="hidden">
+              <label for="oilWithdrawMachineTypeOther" class="block text-xs font-semibold text-slate-700 mb-1.5">ระบุเครื่องจักรอื่น ๆ <span class="text-rose-500">*</span></label>
+              <input type="text" name="oilWithdrawMachineTypeOther" id="oilWithdrawMachineTypeOther" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label for="oilWithdrawOilType" class="block text-xs font-semibold text-slate-700 mb-1.5">ชนิดน้ำมันเชื้อเพลิง <span class="text-rose-500">*</span></label>
+                <select name="oilWithdrawOilType" id="oilWithdrawOilType" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+                  <option value="ดีเซล">ดีเซล (Diesel)</option>
+                  <option value="แก๊สโซฮอล์ 95">แก๊สโซฮอล์ 95</option>
+                  <option value="แก๊สโซฮอล์ 91">แก๊สโซฮอล์ 91</option>
+                  <option value="E20">E20</option>
+                  <option value="เบนซิน">เบนซิน</option>
+                </select>
+              </div>
+              <div>
+                <label for="oilWithdrawOilQuantity" class="block text-xs font-semibold text-slate-700 mb-1.5">จำนวน (ลิตร) <span class="text-rose-500">*</span></label>
+                <input type="number" name="oilWithdrawOilQuantity" id="oilWithdrawOilQuantity" required min="0.1" step="0.01" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5" placeholder="0.00">
+              </div>
+              <div>
+                <label for="oilWithdrawCredit" class="block text-xs font-semibold text-slate-700 mb-1.5">จำนวนเงิน (บาท) <span class="text-rose-500">*</span></label>
+                <input type="number" name="oilWithdrawCredit" id="oilWithdrawCredit" required min="0" step="0.01" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5" placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label for="oilWithdrawBuyerName" class="block text-xs font-semibold text-slate-700 mb-1.5">ผู้จัดซื้อ / ผู้เบิก <span class="text-rose-500">*</span></label>
+                <input type="text" name="oilWithdrawBuyerName" id="oilWithdrawBuyerName" required class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+              </div>
+              <div>
+                <label for="oilWithdrawAccumulatedCreditLimit" class="block text-xs font-semibold text-slate-700 mb-1.5">วงเงินจัดซื้อสะสมคงเหลือ (บาท)</label>
+                <input type="text" name="oilWithdrawAccumulatedCreditLimit" id="oilWithdrawAccumulatedCreditLimit" readonly class="w-full text-sm bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-600 font-semibold">
+              </div>
+            </div>
+
+            <div>
+              <label for="oilWithdrawNote" class="block text-xs font-semibold text-slate-700 mb-1.5">หมายเหตุ</label>
+              <input type="text" name="oilWithdrawNote" id="oilWithdrawNote" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
+            </div>
+
+            <div class="pt-4 flex justify-end">
+              <button type="submit"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all active:scale-95">
+                <i class="fa-solid fa-gas-pump"></i>
+                บันทึกการเบิกน้ำมัน
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 6: อนุญาตให้ใช้รถ (รายการคำขอ & อนุมัติ) -->
+      <!-- ========================================== -->
+      <div id="p_tab6" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-slate-900">รายการพิจารณาอนุญาตให้ใช้รถ</h2>
+                <p class="text-xs text-slate-500">ตรวจสอบและพิจารณาอนุมัติคำขออนุญาตใช้ยานพาหนะ</p>
+              </div>
+            </div>
+            <button type="button" onclick="refreshCarPermission()" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors">
+              <i class="fa-solid fa-rotate"></i>
+              รีเฟรชข้อมูล
+            </button>
+          </div>
+
+          <div class="p-6 overflow-x-auto">
+            <table id="data_table_carPermission" class="display responsive nowrap w-full text-xs"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 7: อนุมัติให้เบิกน้ำมัน -->
+      <!-- ========================================== -->
+      <div id="p_tab7" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-8 text-center">
+          <div class="w-16 h-16 rounded-full bg-blue-50 text-brand-600 flex items-center justify-center mx-auto text-2xl mb-4">
+            <i class="fa-solid fa-stamp"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-900">อนุมัติการเบิกน้ำมันเชื้อเพลิง</h2>
+          <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">ฟังก์ชันสำหรับการพิจารณาและลงนามอนุมัติเอกสารการเบิกจ่ายน้ำมันเชื้อเพลิง</p>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 8: ข้อมูลส่วนตัว -->
+      <!-- ========================================== -->
+      <div id="p_tab8" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden max-w-4xl mx-auto">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-user-circle"></i>
+              </div>
+              <h2 class="text-lg font-bold text-slate-900">ข้อมูลส่วนตัวผู้ใช้งาน</h2>
+            </div>
+            <button type="button" onclick="updatePersonalDataForm()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow transition-colors">
+              <i class="fa-solid fa-pen-to-square"></i>
+              แก้ไขข้อมูล
+            </button>
+          </div>
+
+          <div class="p-6 sm:p-8 space-y-6">
+            <!-- Profile Avatar & Signature previews -->
+            <div class="flex flex-col sm:flex-row items-center justify-around gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+              <div class="text-center">
+                <img name="profileImage" id="profileImage" src="https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW" alt="Profile"
+                  class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md mx-auto mb-2">
+                <span class="text-xs font-semibold text-slate-600">รูปภาพโปรไฟล์</span>
+              </div>
+              <div class="text-center">
+                <div class="h-28 w-48 bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner mx-auto mb-2">
+                  <img name="signatureImage" id="signatureImage" src="https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx" alt="Signature"
+                    class="max-h-full max-w-full object-contain">
+                </div>
+                <span class="text-xs font-semibold text-slate-600">ลายมือชื่ออิเล็กทรอนิกส์</span>
+              </div>
+            </div>
+
+            <!-- Profile Details Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Username</label>
+                <input type="text" name="usernameP" id="usernameP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Password</label>
+                <input type="password" name="passwordP" id="passwordP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">ชื่อ - สกุล</label>
+                <input type="text" name="nameUserP" id="nameUserP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-semibold">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">หน่วยงาน / สังกัด</label>
+                <input type="text" name="organizationP" id="organizationP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">ตำแหน่ง</label>
+                <input type="text" name="positionP" id="positionP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">สิทธิ์การใช้งาน (Role)</label>
+                <input type="text" name="roleP" id="roleP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-semibold">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">ระดับการอนุมัติ (Level)</label>
+                <input type="text" name="levelP" id="levelP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">อีเมล</label>
+                <input type="text" name="emailP" id="emailP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">LINE Notify Token</label>
+                <input type="text" name="tokenP" id="tokenP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">ปฏิบัติราชการแทน</label>
+                <input type="text" name="userPositionReplaceP" id="userPositionReplaceP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 9: ข้อมูลผู้ใช้งานระบบ (Admin only) -->
+      <!-- ========================================== -->
+      <div id="p_tab9" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-users-gear"></i>
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-slate-900">จัดการข้อมูลผู้ใช้งานระบบ</h2>
+                <p class="text-xs text-slate-500">จัดการรายชื่อ กำหนดสิทธิ์ และลายมือชื่อของผู้ใช้งาน</p>
+              </div>
+            </div>
+            <button type="button" onclick="openNewUserDataForm()" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow transition-colors">
+              <i class="fa-solid fa-user-plus"></i>
+              เพิ่มผู้ใช้งานใหม่
+            </button>
+          </div>
+
+          <div class="p-6 overflow-x-auto">
+            <table id="data_table_userDataForAdmin" class="display responsive nowrap w-full text-xs"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 10: ข้อมูลรถในระบบ (Admin only) -->
+      <!-- ========================================== -->
+      <div id="p_tab10" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-blue-50 text-brand-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-car-rear"></i>
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-slate-900">จัดการข้อมูลรถในระบบ</h2>
+                <p class="text-xs text-slate-500">ทะเบียนรถ ประเภท และสถานะยานพาหนะขององค์กร</p>
+              </div>
+            </div>
+            <button type="button" onclick="openNewCarDataForm()" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow transition-colors">
+              <i class="fa-solid fa-plus"></i>
+              เพิ่มรถใหม่
+            </button>
+          </div>
+
+          <div class="p-6 overflow-x-auto">
+            <table id="data_table_carDataForAdmin" class="display responsive nowrap w-full text-xs"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 11: การตั้งค่าข้อมูลทั่วไป (Admin only) -->
+      <!-- ========================================== -->
+      <div id="p_tab11" class="page-tab hidden">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-sliders"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">การตั้งค่าข้อมูลทั่วไปและลิงก์ระบบ</h2>
+              <p class="text-xs text-slate-500">ปรับแต่งชื่อองค์กร โฟลเดอร์ Google Drive แม่แบบเอกสาร และ URL รายงาน</p>
+            </div>
+          </div>
+
+          <form id="editOrganizationDataForm" onsubmit="editOrganizationDataFormSubmit(this)" class="p-6 sm:p-8 space-y-6">
+            <!-- Organization Info -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-building text-brand-600"></i>
+                ข้อมูลหน่วยงาน
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label for="organizationNameForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อหน่วยงาน <span class="text-rose-500">*</span></label>
+                  <input type="text" name="organizationNameForAdmin" id="organizationNameForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="organizationDistrictForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">อำเภอ <span class="text-rose-500">*</span></label>
+                  <input type="text" name="organizationDistrictForAdmin" id="organizationDistrictForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="organizationProvinceForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">จังหวัด <span class="text-rose-500">*</span></label>
+                  <input type="text" name="organizationProvinceForAdmin" id="organizationProvinceForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label for="organizationAdminNameForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อผู้ดูแลระบบ <span class="text-rose-500">*</span></label>
+                  <input type="text" name="organizationAdminNameForAdmin" id="organizationAdminNameForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="organizationAdminTelForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ผู้ดูแล <span class="text-rose-500">*</span></label>
+                  <input type="text" name="organizationAdminTelForAdmin" id="organizationAdminTelForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="lineGroupToken" class="block text-xs font-semibold text-slate-700 mb-1">LINE Group Token</label>
+                  <input type="text" name="lineGroupToken" id="lineGroupToken" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="organizationLogoURLForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">File ID รูปโลโก้ (Drive) <span class="text-rose-500">*</span></label>
+                  <input type="text" name="organizationLogoURLForAdmin" id="organizationLogoURLForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="organizationLogInImageURLForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">File ID รูปหน้า Login (Drive) <span class="text-rose-500">*</span></label>
+                  <input type="text" name="organizationLogInImageURLForAdmin" id="organizationLogInImageURLForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+            </div>
+
+            <!-- Google Drive Folders & Templates -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
+                <i class="fa-brands fa-google-drive text-amber-500"></i>
+                โฟลเดอร์ Google Drive และแม่แบบเอกสาร
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="profileImageFolderURLForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">URL โฟลเดอร์รูปโปรไฟล์ <span class="text-rose-500">*</span></label>
+                  <input type="text" name="profileImageFolderURLForAdmin" id="profileImageFolderURLForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="signatureImageFolderURLForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">URL โฟลเดอร์รูปลายมือชื่อ <span class="text-rose-500">*</span></label>
+                  <input type="text" name="signatureImageFolderURLForAdmin" id="signatureImageFolderURLForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="form3TemplateURLForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">URL แม่แบบเอกสารแบบ 3 <span class="text-rose-500">*</span></label>
+                  <input type="text" name="form3TemplateURLForAdmin" id="form3TemplateURLForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="form3FolderURLForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">URL โฟลเดอร์บันทึกแบบ 3 <span class="text-rose-500">*</span></label>
+                  <input type="text" name="form3FolderURLForAdmin" id="form3FolderURLForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="form5TemplateURLForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">URL แม่แบบเอกสารแบบ 5 <span class="text-rose-500">*</span></label>
+                  <input type="text" name="form5TemplateURLForAdmin" id="form5TemplateURLForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="form5FolderURLForAdmin" class="block text-xs font-semibold text-slate-700 mb-1">URL โฟลเดอร์บันทึกแบบ 5 <span class="text-rose-500">*</span></label>
+                  <input type="text" name="form5FolderURLForAdmin" id="form5FolderURLForAdmin" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+            </div>
+
+            <!-- External Report URLs -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-link text-indigo-500"></i>
+                URL ระบบและรายงานภายนอก
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="execURL" class="block text-xs font-semibold text-slate-700 mb-1">URL เว็บแอป (exec) <span class="text-rose-500">*</span></label>
+                  <input type="text" name="execURL" id="execURL" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="form1URL" class="block text-xs font-semibold text-slate-700 mb-1">URL แบบ 1 <span class="text-rose-500">*</span></label>
+                  <input type="text" name="form1URL" id="form1URL" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="form2URL" class="block text-xs font-semibold text-slate-700 mb-1">URL แบบ 2 <span class="text-rose-500">*</span></label>
+                  <input type="text" name="form2URL" id="form2URL" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="form4URL" class="block text-xs font-semibold text-slate-700 mb-1">URL แบบ 4 <span class="text-rose-500">*</span></label>
+                  <input type="text" name="form4URL" id="form4URL" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="form6URL" class="block text-xs font-semibold text-slate-700 mb-1">URL แบบ 6 <span class="text-rose-500">*</span></label>
+                  <input type="text" name="form6URL" id="form6URL" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                  <label for="oilWithdrawURL" class="block text-xs font-semibold text-slate-700 mb-1">URL แบบเบิกน้ำมัน <span class="text-rose-500">*</span></label>
+                  <input type="text" name="oilWithdrawURL" id="oilWithdrawURL" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+              <button type="submit" id="btnEditOrganizationData"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all active:scale-95">
+                <i class="fa-solid fa-rotate"></i>
+                อัปเดตข้อมูลการตั้งค่า
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 4. MODALS (Popups)                         -->
+  <!-- ========================================== -->
+
+  <!-- MODAL: เพิ่มข้อมูลรถใหม่ (newCarDataFormModal) -->
+  <div id="newCarDataFormModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop-custom">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-car text-brand-600"></i>
+          เพิ่มข้อมูลรถใหม่
+        </h3>
+        <button type="button" onclick="closeTailwindModal('newCarDataFormModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="newCarDataForm" onsubmit="newCarDataFormSubmit(this)" class="p-6 overflow-y-auto space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ประเภทรถ <span class="text-rose-500">*</span></label>
+            <input type="text" name="newCarType" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ลำดับที่</label>
+            <input type="text" name="newCarNo" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อรถ <span class="text-rose-500">*</span></label>
+            <input type="text" name="newCarName" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">รุ่น / แบบ</label>
+            <input type="text" name="newCarModelType" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเลขทะเบียน <span class="text-rose-500">*</span></label>
+            <input type="text" name="newCarRegisNumber" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">สังกัด</label>
+            <input type="text" name="newCarAffiliation" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ราคา</label>
+            <input type="number" name="newCarPrice" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่ได้รับ</label>
+            <input type="date" name="newCarGetDate" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่จำหน่าย</label>
+            <input type="date" name="newCarReleaseDate" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุ</label>
+            <input type="text" name="newCarNote" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+        </div>
+        <div class="pt-4 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeTailwindModal('newCarDataFormModal')" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 shadow">บันทึกข้อมูลรถ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: แก้ไขข้อมูลรถ (updateCarDataFormModal) -->
+  <div id="updateCarDataFormModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop-custom">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-car text-amber-600"></i>
+          แก้ไขข้อมูลรถในระบบ
+        </h3>
+        <button type="button" onclick="closeTailwindModal('updateCarDataFormModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="updateCarDataForm" onsubmit="updateCarDataFormSubmit(this)" class="p-6 overflow-y-auto space-y-4">
+        <input type="hidden" name="updateCarID" id="updateCarID">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ประเภทรถ <span class="text-rose-500">*</span></label>
+            <input type="text" name="updateCarType" id="updateCarType" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ลำดับที่</label>
+            <input type="text" name="updateCarNo" id="updateCarNo" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อรถ <span class="text-rose-500">*</span></label>
+            <input type="text" name="updateCarName" id="updateCarName" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">รุ่น / แบบ</label>
+            <input type="text" name="updateCarModelType" id="updateCarModelType" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเลขทะเบียน <span class="text-rose-500">*</span></label>
+            <input type="text" name="updateCarRegisNumber" id="updateCarRegisNumber" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">สังกัด</label>
+            <input type="text" name="updateCarAffiliation" id="updateCarAffiliation" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ราคา</label>
+            <input type="number" name="updateCarPrice" id="updateCarPrice" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่ได้รับ</label>
+            <input type="date" name="updateCarGetDate" id="updateCarGetDate" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่จำหน่าย</label>
+            <input type="date" name="updateCarReleaseDate" id="updateCarReleaseDate" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุ</label>
+            <input type="text" name="updateCarNote" id="updateCarNote" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+        </div>
+        <div class="pt-4 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeTailwindModal('updateCarDataFormModal')" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-amber-600 rounded-xl hover:bg-amber-700 shadow">อัปเดตข้อมูลรถ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: เพิ่มผู้ใช้งานใหม่ (newUserDataFormModal) -->
+  <div id="newUserDataFormModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop-custom">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-brand-600"></i>
+          เพิ่มผู้ใช้งานใหม่
+        </h3>
+        <button type="button" onclick="closeTailwindModal('newUserDataFormModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="newUserDataForm" onsubmit="newUserDataFormSubmit(this)" class="p-6 overflow-y-auto space-y-4">
+        <!-- Previews -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl">
+          <div class="text-center">
+            <img name="newUserProfileImagePreview" id="newUserProfileImagePreview" src="https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW" class="w-20 h-20 rounded-full object-cover mx-auto mb-2 border shadow-sm">
+            <label class="block text-[11px] font-semibold text-slate-700 mb-1">เลือกรูปโปรไฟล์</label>
+            <input type="file" name="newUserProfileImage" id="newUserProfileImage" accept="image/*" onchange="previewNewUserProfileImage()" class="text-[11px] text-slate-500">
+          </div>
+          <div class="text-center">
+            <img name="newUserSignatureImagePreview" id="newUserSignatureImagePreview" src="https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx" class="h-20 w-36 object-contain mx-auto mb-2 bg-white border rounded-xl p-1 shadow-inner">
+            <label class="block text-[11px] font-semibold text-slate-700 mb-1">เลือกรูปลายมือชื่อ</label>
+            <input type="file" name="newUserSignatureImage" id="newUserSignatureImage" accept="image/*" onchange="previewNewUserSignatureImage()" class="text-[11px] text-slate-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Username <span class="text-rose-500">*</span></label>
+            <input type="text" name="newUserUsername" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Password <span class="text-rose-500">*</span></label>
+            <input type="password" name="newUserPassword" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ - สกุล <span class="text-rose-500">*</span></label>
+            <input type="text" name="newUserNameUser" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หน่วยงาน / สังกัด</label>
+            <input type="text" name="newUserOrganization" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ตำแหน่ง <span class="text-rose-500">*</span></label>
+            <input type="text" name="newUserPosition" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ปฏิบัติราชการแทน</label>
+            <input type="text" name="newUserPositionReplace" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">สิทธิ์ (Role) <span class="text-rose-500">*</span></label>
+            <select name="newUserRole" id="newUserRole" onchange="roleAdmin('newUserRole', 'newUserLevel')" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              <option value="User">User</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ระดับการอนุมัติ (Level)</label>
+            <select name="newUserLevel" id="newUserLevel" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              <option value="1">1: ผู้ขอใช้รถทั่วไป</option>
+              <option value="2">2: ผู้เห็นชอบ / เสนอพิจารณา</option>
+              <option value="3">3: ผู้อนุมัติสูงสุด</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมล</label>
+            <input type="email" name="newUserEmail" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">LINE Token</label>
+            <input type="text" name="newUserToken" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeTailwindModal('newUserDataFormModal')" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 shadow">เพิ่มผู้ใช้งาน</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: แก้ไขผู้ใช้งาน (updateUserDataFormModal) -->
+  <div id="updateUserDataFormModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop-custom">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-user-pen text-amber-600"></i>
+          แก้ไขข้อมูลผู้ใช้งาน
+        </h3>
+        <button type="button" onclick="closeTailwindModal('updateUserDataFormModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="updateUserDataForm" onsubmit="updateUserDataFormSubmit(this)" class="p-6 overflow-y-auto space-y-4">
+        <!-- Previews -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl">
+          <div class="text-center">
+            <img name="updateUserProfileImagePreview" id="updateUserProfileImagePreview" src="https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW" class="w-20 h-20 rounded-full object-cover mx-auto mb-2 border shadow-sm">
+            <label class="block text-[11px] font-semibold text-slate-700 mb-1">เปลี่ยนรูปโปรไฟล์</label>
+            <input type="file" name="updateUserProfileImage" id="updateUserProfileImage" accept="image/*" onchange="previewUpdateUserProfileImage()" class="text-[11px] text-slate-500">
+          </div>
+          <div class="text-center">
+            <img name="updateUserSignatureImagePreview" id="updateUserSignatureImagePreview" src="https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx" class="h-20 w-36 object-contain mx-auto mb-2 bg-white border rounded-xl p-1 shadow-inner">
+            <label class="block text-[11px] font-semibold text-slate-700 mb-1">เปลี่ยนรูปลายมือชื่อ</label>
+            <input type="file" name="updateUserSignatureImage" id="updateUserSignatureImage" accept="image/*" onchange="previewUpdateUserSignatureImage()" class="text-[11px] text-slate-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Username <span class="text-rose-500">*</span></label>
+            <input type="text" name="updateUserUsername" id="updateUserUsername" readonly class="w-full text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 cursor-not-allowed">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Password <span class="text-rose-500">*</span></label>
+            <input type="password" name="updateUserPassword" id="updateUserPassword" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ - สกุล <span class="text-rose-500">*</span></label>
+            <input type="text" name="updateUserNameUser" id="updateUserNameUser" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หน่วยงาน / สังกัด</label>
+            <input type="text" name="updateUserOrganization" id="updateUserOrganization" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ตำแหน่ง <span class="text-rose-500">*</span></label>
+            <input type="text" name="updateUserPosition" id="updateUserPosition" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ปฏิบัติราชการแทน</label>
+            <input type="text" name="updateUserPositionReplace" id="updateUserPositionReplace" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div id="updateUserRoleDiv">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">สิทธิ์ (Role) <span class="text-rose-500">*</span></label>
+            <select name="updateUserRole" id="updateUserRole" onchange="roleAdmin('updateUserRole', 'updateUserLevel')" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              <option value="User">User</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          <div id="updateUserLevelDiv">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ระดับการอนุมัติ (Level)</label>
+            <select name="updateUserLevel" id="updateUserLevel" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+              <option value="1">1: ผู้ขอใช้รถทั่วไป</option>
+              <option value="2">2: ผู้เห็นชอบ / เสนอพิจารณา</option>
+              <option value="3">3: ผู้อนุมัติสูงสุด</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมล</label>
+            <input type="email" name="updateUserEmail" id="updateUserEmail" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">LINE Token</label>
+            <input type="text" name="updateUserToken" id="updateUserToken" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeTailwindModal('updateUserDataFormModal')" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-amber-600 rounded-xl hover:bg-amber-700 shadow">บันทึกการแก้ไข</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: รายละเอียดคำขอและพิจารณาอนุมัติ (viewCarPermissionModal) -->
+  <div id="viewCarPermissionModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop-custom">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-file-shield text-brand-600"></i>
+          รายละเอียดคำขออนุญาตใช้รถ
+        </h3>
+        <button type="button" onclick="closeTailwindModal('viewCarPermissionModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="viewCarPermissionForm" class="p-6 overflow-y-auto space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-0.5">Request ID</label>
+            <input type="text" name="requestIdModal" id="requestIdModal" readonly class="w-full text-xs font-bold text-slate-800 bg-transparent border-0 p-0">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-0.5">สถานะคำขอ</label>
+            <input type="text" name="requestStatusModal" id="requestStatusModal" readonly class="w-full text-xs font-bold text-brand-600 bg-transparent border-0 p-0">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-0.5">วันที่ส่งคำขอ</label>
+            <input type="text" name="requestTimestampModal" id="requestTimestampModal" readonly class="w-full text-xs text-slate-600 bg-transparent border-0 p-0">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">เรียน</label>
+            <input type="text" name="dearHeaderPermissionModal" id="dearHeaderPermissionModal" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">กลุ่ม / งาน / สาขาวิชา</label>
+            <input type="text" name="sectionHeaderPermissionModal" id="sectionHeaderPermissionModal" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">ผู้ขออนุญาต</label>
+            <input type="text" name="carUserPermissionNameModal" id="carUserPermissionNameModal" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-semibold">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">ตำแหน่ง</label>
+            <input type="text" name="carUserPermissionPositionModal" id="carUserPermissionPositionModal" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">รถหมายเลขทะเบียน</label>
+            <input type="text" name="carPermissionRegisNumberModal" id="carPermissionRegisNumberModal" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">จำนวนผู้ร่วมเดินทาง (คน)</label>
+            <input type="text" name="peopleNumberPermissionModal" id="peopleNumberPermissionModal" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs text-slate-500 mb-1">สถานที่ไป</label>
+            <input type="text" name="destinationPermissionModal" id="destinationPermissionModal" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs text-slate-500 mb-1">ภารกิจ</label>
+            <input type="text" name="missionPermissionModal" id="missionPermissionModal" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-2xl">
+          <div>
+            <span class="block text-[10px] text-slate-400">วันเดินทาง</span>
+            <input type="text" name="departureDatePermissionModal" id="departureDatePermissionModal" readonly class="w-full text-xs font-medium text-slate-700 bg-transparent border-0 p-0">
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400">เวลาออก</span>
+            <input type="text" name="departureTimePermissionModal" id="departureTimePermissionModal" readonly class="w-full text-xs font-medium text-slate-700 bg-transparent border-0 p-0">
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400">วันกลับ</span>
+            <input type="text" name="arrivedDatePermissionModal" id="arrivedDatePermissionModal" readonly class="w-full text-xs font-medium text-slate-700 bg-transparent border-0 p-0">
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400">เวลากลับ</span>
+            <input type="text" name="arrivedTimePermissionModal" id="arrivedTimePermissionModal" readonly class="w-full text-xs font-medium text-slate-700 bg-transparent border-0 p-0">
+          </div>
+        </div>
+
+        <!-- Level 2 Approval Actions -->
+        <div id="user2Allow" class="hidden p-5 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-3">
+          <div class="text-xs font-bold text-brand-900">การพิจารณาชั้นที่ 1 (เสนอเพื่อพิจารณา)</div>
+          <div class="flex gap-3">
+            <button type="button" onclick="user2ApproveSwal()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow transition-colors flex items-center gap-1.5">
+              <i class="fa-solid fa-check"></i>
+              เห็นควรอนุญาต
+            </button>
+            <button type="button" onclick="user2NotApproveSwal()" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow transition-colors flex items-center gap-1.5">
+              <i class="fa-solid fa-xmark"></i>
+              ยกเลิกคำร้อง
+            </button>
+          </div>
+        </div>
+
+        <!-- Level 3 Approval Actions -->
+        <div id="user3Allow" class="hidden p-5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
+          <div class="text-xs font-bold text-emerald-900">การพิจารณาชั้นที่ 2 (ผู้อนุมัติ)</div>
+          <div class="flex gap-3">
+            <button type="button" onclick="user3ApproveSwal()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow transition-colors flex items-center gap-1.5">
+              <i class="fa-solid fa-check-double"></i>
+              อนุญาตให้ใช้รถ
+            </button>
+            <button type="button" onclick="user3NotApproveSwal()" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow transition-colors flex items-center gap-1.5">
+              <i class="fa-solid fa-ban"></i>
+              ไม่อนุญาต
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button type="button" onclick="closeTailwindModal('viewCarPermissionModal')" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">ปิดหน้าต่าง</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ตารางคิวรถ (showQueueTableModal) -->
+  <div id="showQueueTableModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop-custom">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-calendar-check text-brand-600"></i>
+          ตารางคิวการใช้รถยนต์
+        </h3>
+        <button type="button" onclick="closeTailwindModal('showQueueTableModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto">
+        <table id="data_table_showQueueTable" class="display responsive nowrap w-full text-xs"></table>
+      </div>
+      <div class="p-4 border-t border-slate-100 flex justify-end">
+        <button type="button" onclick="closeTailwindModal('showQueueTableModal')" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5. JAVASCRIPT APPLICATION LOGIC            -->
+  <!-- ========================================== -->
+  <script>
+    // --- Global State ---
+    let userDataArray = null;
+    let url = [];
+
+    // --- Modal Helper Functions (Tailwind Compatible) ---
+    function openTailwindModal(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) {
+        el.classList.remove('hidden');
+      }
+    }
+
+    function closeTailwindModal(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) {
+        el.classList.add('hidden');
+      }
+    }
+
+    // jQuery modal shim for backwards-compatibility
+    if (window.jQuery) {
+      jQuery.fn.modal = function(action) {
+        return this.each(function() {
+          if (action === 'show') {
+            this.classList.remove('hidden');
+          } else if (action === 'hide') {
+            this.classList.add('hidden');
+          }
+        });
+      };
+    }
+
+    // --- Loading Spinner UI helper ---
+    function showGlobalSpinner(title = 'กำลังประมวลผล...', sub = 'โปรดรอสักครู่ ระบบกำลังสื่อสารกับฐานข้อมูล') {
+      const modal = document.getElementById('spinnerLoadingModal');
+      const t = document.getElementById('spinnerTextTitle');
+      const s = document.getElementById('spinnerTextSub');
+      if (t) t.innerText = title;
+      if (s) s.innerText = sub;
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function hideGlobalSpinner() {
+      const modal = document.getElementById('spinnerLoadingModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // Password visibility toggle
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+
+    // Sidebar drawer toggle
+    function toggleSidebar(open) {
+      const sidebar = document.getElementById('offcanvasMenuScrolling');
+      if (open) {
+        sidebar.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('hidden');
+      }
+    }
+
+    // --- Tab Navigation ---
+    function hideAllPages() {
+      for (let i = 1; i <= 11; i++) {
+        const page = document.getElementById('p_tab' + i);
+        if (page) page.classList.add('hidden');
+        const btn = document.getElementById('tab' + i);
+        if (btn) {
+          btn.classList.remove('bg-brand-50', 'text-brand-600', 'font-semibold');
+          btn.classList.add('text-slate-700');
+        }
+      }
+    }
+
+    function navTabClick(num) {
+      hideAllPages();
+      const page = document.getElementById('p_tab' + num);
+      if (page) page.classList.remove('hidden');
+
+      const btn = document.getElementById('tab' + num);
+      if (btn) {
+        btn.classList.add('bg-brand-50', 'text-brand-600', 'font-semibold');
+        btn.classList.remove('text-slate-700');
+      }
+      toggleSidebar(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function tabClick(num) {
+      navTabClick(num);
+    }
+
+    // Open external report Google Sheets
+    function getURLSuccess(urlFromSheet) {
+      url = urlFromSheet;
+    }
+
+    function reportClick(num) {
+      let urlOpen = '';
+      if (num === 1) urlOpen = url[0];
+      else if (num === 2) urlOpen = url[1];
+      else if (num === 3) urlOpen = url[2];
+      else if (num === 4) urlOpen = url[3];
+      else if (num === 5) urlOpen = url[4];
+
+      if (urlOpen) {
+        window.open(urlOpen, '_blank');
+      } else {
+        Swal.fire({
+          icon: 'info',
+          title: 'ไม่พบลิงก์รายงาน',
+          text: 'กรุณาตั้งค่า URL รายงานในเมนูตั้งค่าข้อมูลทั่วไป'
+        });
+      }
+    }
+
+    // --- Onload Initialization ---
+    window.onload = function() {
+      showGlobalSpinner('กำลังโหลดระบบ...', 'กำลังดึงการตั้งค่าและตรวจสอบข้อมูลการเข้าสู่ระบบ');
+      userDataArray = JSON.parse(localStorage.getItem("userDataArrayLS"));
+      google.script.run.withSuccessHandler(showResult).getSetting();
+      google.script.run.withSuccessHandler(getURLSuccess).getReportURL();
+    };
+
+    function showResult(setting) {
+      hideGlobalSpinner();
+      showResultFromSetting(setting);
+
+      if (userDataArray == null) {
+        document.getElementById('p_login').classList.remove('hidden');
+        document.getElementById('contentDiv').classList.add('hidden');
+      } else {
+        document.getElementById('p_login').classList.add('hidden');
+        document.getElementById('contentDiv').classList.remove('hidden');
+        navTabClick(1);
+
+        document.getElementById('usernameShow').innerHTML = userDataArray[2];
+
+        document.getElementById('carUserPermissionSignature').value = userDataArray[10] || '';
+        document.getElementById('oilWithdrawerSignature').value = userDataArray[10] || '';
+
+        document.getElementById('carUserPermissionName').value = userDataArray[2] || '';
+        document.getElementById('carUserPermissionPosition').value = userDataArray[4] || '';
+
+        document.getElementById('carUsageRecorderName').value = userDataArray[2] || '';
+        document.getElementById('carUsageRecorderPosition').value = userDataArray[4] || '';
+
+        document.getElementById('carAccidentRecorderName').value = userDataArray[2] || '';
+        document.getElementById('carAccidentRecorderPosition').value = userDataArray[4] || '';
+        document.getElementById('carAccidentRecorderEmail').value = userDataArray[7] || '';
+
+        document.getElementById('carMaintenanceRecorderName').value = userDataArray[2] || '';
+        document.getElementById('carMaintenanceRecorderPosition').value = userDataArray[4] || '';
+
+        showPersonalData();
+
+        google.script.run.withSuccessHandler(getCarDataForUserSuccess).getCarDataForUser();
+        google.script.run.withSuccessHandler(getCreditLimitSuccess).getCreditLimit();
+
+        if (userDataArray[5] === 'Admin') {
+          google.script.run.withSuccessHandler(getUserDataForAdminSuccess).getUserDataForAdmin();
+          google.script.run.withSuccessHandler(getCarDataForAdminSuccess).getCarDataForAdmin();
+          google.script.run.withSuccessHandler(getOrgDataForAdminSuccess).getOrgDataForAdmin();
+          google.script.run.withSuccessHandler(getPermissionDataSuccess).getPermissionData(userDataArray);
+        } else if (userDataArray[5] === 'User' && userDataArray[6] != 1) {
+          // Approvers (level 2 or 3)
+          document.getElementById('tab9').style.display = "none";
+          document.getElementById('tab10').style.display = "none";
+          document.getElementById('tab11').style.display = "none";
+          google.script.run.withSuccessHandler(getPermissionDataSuccess).getPermissionData(userDataArray);
+        } else {
+          // Regular users
+          document.getElementById('tab6').style.display = "none";
+          document.getElementById('tab7').style.display = "none";
+          document.getElementById('tab9').style.display = "none";
+          document.getElementById('tab10').style.display = "none";
+          document.getElementById('tab11').style.display = "none";
+        }
+      }
+    }
+
+    function showResultFromSetting(setting) {
+      if (!setting || setting.length === 0) return;
+      var phoneNumber = setting[5];
+
+      if (setting[0]) {
+        document.getElementById('showLogo').innerHTML = '<img src="https://lh3.googleusercontent.com/d/' + setting[0] + '" class="h-16 w-auto mx-auto object-contain">';
+      }
+      document.getElementById('organizationName').innerHTML = setting[1] || '';
+      document.getElementById('headerOrgName').innerHTML = setting[1] || '';
+      document.getElementById('organizationAddress').innerHTML = 'อำเภอ' + (setting[2] || '') + ' จังหวัด' + (setting[3] || '');
+      document.getElementById('adminName').innerHTML = setting[4] || '';
+
+      if (phoneNumber) {
+        document.getElementById('phoneLink').href = 'tel:' + phoneNumber;
+        document.getElementById('phoneLink').innerHTML = '<i class="fa-solid fa-phone text-[10px]"></i> ' + phoneNumber;
+      }
+
+      if (setting[6]) {
+        document.getElementById('showLoginImage').innerHTML =
+          '<img class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/d/' + setting[6] + '">' +
+          '<div class="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"></div>' +
+          '<div class="relative z-10 text-white text-center p-8 space-y-3">' +
+          '<div class="inline-flex p-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl mb-2"><i class="fa-solid fa-car text-4xl text-blue-200"></i></div>' +
+          '<h2 class="text-2xl font-bold">' + (setting[1] || 'ระบบขออนุญาตใช้รถ') + '</h2>' +
+          '<p class="text-xs text-blue-100 max-w-xs mx-auto leading-relaxed">ระบบจองรถส่วนกลาง บันทึกการเดินทาง เบิกจ่ายน้ำมัน และซ่อมบำรุง</p></div>';
+      }
+
+      document.getElementById('dearHeaderPermission').value = 'ผู้อำนวยการ' + (setting[1] || '');
+      document.getElementById('dearHeader').value = 'ผู้อำนวยการ' + (setting[1] || '');
+      document.getElementById('sectionHeaderPermission').value = setting[1] || '';
+    }
+
+    // --- Authentication ---
+    function login(obj, evt) {
+      if (evt && evt.preventDefault) evt.preventDefault();
+      else if (window.event && window.event.preventDefault) window.event.preventDefault();
+
+      Swal.fire({
+        title: 'กำลังตรวจสอบข้อมูล...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+      google.script.run
+        .withSuccessHandler(loginSuccess)
+        .withFailureHandler(function(err) {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล',
+            text: err ? (err.message || String(err)) : 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้'
+          });
+        })
+        .userLogin(obj);
+    }
+
+    function loginSuccess(userData) {
+      if (userData == null) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เข้าสู่ระบบไม่สำเร็จ',
+          text: 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง',
+          confirmButtonColor: '#2563eb'
+        });
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: 'เข้าสู่ระบบสำเร็จ',
+          timer: 1000,
+          showConfirmButton: false
+        });
+
+        localStorage.setItem("userDataArrayLS", JSON.stringify(userData));
+        userDataArray = JSON.parse(localStorage.getItem("userDataArrayLS"));
+
+        document.getElementById('p_login').classList.add('hidden');
+        document.getElementById('contentDiv').classList.remove('hidden');
+        navTabClick(1);
+
+        document.getElementById('usernameShow').innerHTML = userDataArray[2];
+
+        document.getElementById('carUserPermissionSignature').value = userDataArray[10] || '';
+        document.getElementById('oilWithdrawerSignature').value = userDataArray[10] || '';
+
+        document.getElementById('carUserPermissionName').value = userDataArray[2] || '';
+        document.getElementById('carUserPermissionPosition').value = userDataArray[4] || '';
+
+        document.getElementById('carUsageRecorderName').value = userDataArray[2] || '';
+        document.getElementById('carUsageRecorderPosition').value = userDataArray[4] || '';
+
+        document.getElementById('carAccidentRecorderName').value = userDataArray[2] || '';
+        document.getElementById('carAccidentRecorderPosition').value = userDataArray[4] || '';
+        document.getElementById('carAccidentRecorderEmail').value = userDataArray[7] || '';
+
+        document.getElementById('carMaintenanceRecorderName').value = userDataArray[2] || '';
+        document.getElementById('carMaintenanceRecorderPosition').value = userDataArray[4] || '';
+
+        showPersonalData();
+
+        google.script.run.withSuccessHandler(getCarDataForUserSuccess).getCarDataForUser();
+        google.script.run.withSuccessHandler(getCreditLimitSuccess).getCreditLimit();
+
+        if (userDataArray[5] === 'Admin') {
+          google.script.run.withSuccessHandler(getUserDataForAdminSuccess).getUserDataForAdmin();
+          google.script.run.withSuccessHandler(getCarDataForAdminSuccess).getCarDataForAdmin();
+          google.script.run.withSuccessHandler(getOrgDataForAdminSuccess).getOrgDataForAdmin();
+          google.script.run.withSuccessHandler(getPermissionDataSuccess).getPermissionData(userDataArray);
+        } else if (userDataArray[5] === 'User' && userDataArray[6] != 1) {
+          document.getElementById('tab9').style.display = "none";
+          document.getElementById('tab10').style.display = "none";
+          document.getElementById('tab11').style.display = "none";
+          google.script.run.withSuccessHandler(getPermissionDataSuccess).getPermissionData(userDataArray);
+        } else {
+          document.getElementById('tab6').style.display = "none";
+          document.getElementById('tab7').style.display = "none";
+          document.getElementById('tab9').style.display = "none";
+          document.getElementById('tab10').style.display = "none";
+          document.getElementById('tab11').style.display = "none";
+        }
+      }
+    }
+
+    function logout() {
+      Swal.fire({
+        icon: 'question',
+        title: 'ยืนยันการออกจากระบบ?',
+        showCancelButton: true,
+        confirmButtonText: 'ออกจากระบบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#e11d48',
+        cancelButtonColor: '#64748b'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          localStorage.removeItem("userDataArrayLS");
+          Swal.fire({
+            title: 'กำลังออกจากระบบ...',
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+
+          google.script.run.withSuccessHandler((url) => {
+            if (url) {
+              window.open(url, '_top');
+            } else {
+              location.reload();
+            }
+          }).getURL();
+        }
+      });
+    }
+
+    // --- Profile & User Data ---
+    function showPersonalData() {
+      if (!userDataArray) return;
+      document.getElementById('usernameP').value = userDataArray[0] || '';
+      document.getElementById('passwordP').value = userDataArray[1] || '';
+      document.getElementById('nameUserP').value = userDataArray[2] || '';
+      document.getElementById('organizationP').value = userDataArray[3] || '';
+      document.getElementById('positionP').value = userDataArray[4] || '';
+      document.getElementById('roleP').value = userDataArray[5] || '';
+      document.getElementById('levelP').value = userDataArray[6] || '';
+      document.getElementById('emailP').value = userDataArray[7] || '';
+      document.getElementById('tokenP').value = userDataArray[8] || '';
+
+      if (!userDataArray[9] || userDataArray[9] === "") {
+        document.getElementById('profileImage').src = 'https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW';
+      } else {
+        var match = userDataArray[9].match(/\/d\/([\w-]{25,})/);
+        var id = match ? match[1] : userDataArray[9];
+        document.getElementById('profileImage').src = 'https://lh3.googleusercontent.com/d/' + id;
+      }
+
+      if (!userDataArray[10] || userDataArray[10] === "") {
+        document.getElementById('signatureImage').src = 'https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx';
+      } else {
+        var match2 = userDataArray[10].match(/\/d\/([\w-]{25,})/);
+        var id2 = match2 ? match2[1] : userDataArray[10];
+        document.getElementById('signatureImage').src = 'https://lh3.googleusercontent.com/d/' + id2;
+      }
+    }
+
+    function updatePersonalDataForm() {
+      let username = document.getElementById('usernameP').value;
+      document.getElementById('updateUserDataForm').reset();
+      showGlobalSpinner('กำลังดึงข้อมูลส่วนตัว...');
+      google.script.run.withSuccessHandler(showUserDataModal).getUserDataUpdate(username);
+    }
+
+    // --- Cars Dropdown Populating ---
+    function getCarDataForUserSuccess(values) {
+      if (!values) return;
+      let targets = ['carPermissionRegisNumber', 'carRegisNumber', 'accidentCarRegisNumber', 'carRegisNumberMaintenance', 'oilWithdrawMachineType'];
+
+      targets.forEach(id => {
+        let select = document.getElementById(id);
+        if (!select) return;
+
+        // Keep initial option
+        let firstOpt = select.options[0];
+        let otherOpt = (id === 'oilWithdrawMachineType') ? select.querySelector('option[value="อื่น ๆ"]') : null;
+        select.innerHTML = '';
+        if (firstOpt) select.appendChild(firstOpt);
+
+        for (let i = 0; i < values.length; i++) {
+          let opt = document.createElement("option");
+          opt.value = values[i];
+          opt.text = values[i];
+          select.appendChild(opt);
+        }
+        if (otherOpt) select.appendChild(otherOpt);
+      });
+    }
+
+    function getCreditLimitSuccess(result) {
+      if (document.getElementById('oilWithdrawAccumulatedCreditLimit')) {
+        document.getElementById('oilWithdrawAccumulatedCreditLimit').value = result;
+      }
+    }
+
+    function checkMachineType() {
+      let machineType = document.getElementById('oilWithdrawMachineType').value;
+      let div = document.getElementById('oilWithdrawMachineTypeOtherDiv');
+      let input = document.getElementById('oilWithdrawMachineTypeOther');
+      if (machineType === "อื่น ๆ") {
+        div.classList.remove('hidden');
+        input.setAttribute('required', 'required');
+      } else {
+        div.classList.add('hidden');
+        input.removeAttribute('required');
+      }
+    }
+
+    // --- Form Submissions ---
+    function carUsagePermissionRequestFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการส่งคำร้องขอใช้รถ?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยันส่งคำร้อง",
+        cancelButtonText: "ยกเลิก",
+        confirmButtonColor: "#2563eb",
+        cancelButtonColor: "#64748b"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังบันทึกข้อมูล...',
+            text: 'โปรดรอสักครู่...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(carUsagePermissionRequestFormSubmitDataSuccess).carUsagePermissionRequestFormSubmitData(obj);
+        }
+      });
+    }
+
+    function carUsagePermissionRequestFormSubmitDataSuccess() {
+      let dear = document.getElementById('dearHeaderPermission').value;
+      let name = document.getElementById('carUserPermissionName').value;
+      let pos = document.getElementById('carUserPermissionPosition').value;
+      let sec = document.getElementById('sectionHeaderPermission').value;
+
+      document.getElementById('carUsagePermissionRequestForm').reset();
+
+      document.getElementById('dearHeaderPermission').value = dear;
+      document.getElementById('carUserPermissionName').value = name;
+      document.getElementById('carUserPermissionPosition').value = pos;
+      document.getElementById('sectionHeaderPermission').value = sec;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'บันทึกคำร้องสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
+    function carUsageFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการบันทึกการใช้รถ?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        cancelButtonText: "ยกเลิก",
+        confirmButtonColor: "#2563eb",
+        cancelButtonColor: "#64748b"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังบันทึกข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(carUsageFormSubmitDataSuccess).carUsageFormSubmitData(obj);
+        }
+      });
+    }
+
+    function carUsageFormSubmitDataSuccess() {
+      document.getElementById('carUsageForm').reset();
+      Swal.fire({
+        icon: 'success',
+        title: 'บันทึกการใช้รถสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
+    function carAccidentFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "warning",
+        title: "ยืนยันการบันทึกรายงานอุบัติเหตุ?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยันบันทึก",
+        cancelButtonText: "ยกเลิก",
+        confirmButtonColor: "#e11d48",
+        cancelButtonColor: "#64748b"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังบันทึกข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(carAccidentFormSubmitDataSuccess).carAccidentFormSubmitData(obj);
+        }
+      });
+    }
+
+    function carAccidentFormSubmitDataSuccess() {
+      let dear = document.getElementById('dearHeader').value;
+      document.getElementById('carAccidentForm').reset();
+      document.getElementById('dearHeader').value = dear;
+      Swal.fire({
+        icon: 'success',
+        title: 'บันทึกรายงานอุบัติเหตุสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
+    function carMaintenanceDetailsFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการบันทึกการซ่อมบำรุง?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        cancelButtonText: "ยกเลิก",
+        confirmButtonColor: "#2563eb",
+        cancelButtonColor: "#64748b"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังบันทึกข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(carMaintenanceDetailsFormSubmitDataSuccess).carMaintenanceDetailsFormSubmitData(obj);
+        }
+      });
+    }
+
+    function carMaintenanceDetailsFormSubmitDataSuccess() {
+      document.getElementById('maintenanceDetails').value = "";
+      document.getElementById('bahtMoneyMaintenance').value = "";
+      document.getElementById('carMaintenanceNote').value = "";
+      document.getElementById('maintenanceLocation').value = "";
+
+      Swal.fire({
+        icon: 'success',
+        title: 'บันทึกการซ่อมบำรุงสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
+    function oilWithdrawFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการเบิกน้ำมัน?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        cancelButtonText: "ยกเลิก",
+        confirmButtonColor: "#059669",
+        cancelButtonColor: "#64748b"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังบันทึกข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(oilWithdrawFormSubmitDataSuccess).oilWithdrawFormSubmitData(obj);
+        }
+      });
+    }
+
+    function oilWithdrawFormSubmitDataSuccess() {
+      document.getElementById('oilWithdrawForm').reset();
+      Swal.fire({
+        icon: 'success',
+        title: 'บันทึกการเบิกน้ำมันสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      google.script.run.withSuccessHandler(getCreditLimitSuccess).getCreditLimit();
+    }
+
+    // --- Approvals & Permissions DataTables ---
+    function getPermissionDataSuccess(permissionData) {
+      $('#data_table_carPermission').DataTable({
+        destroy: true,
+        language: {
+          search: "ค้นหา:",
+          lengthMenu: "แสดง _MENU_ รายการ",
+          info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+          infoEmpty: "แสดง 0 ถึง 0 จาก 0 รายการ",
+          infoFiltered: "(กรองจากทั้งหมด _MAX_ รายการ)",
+          paginate: {
+            first: "หน้าแรก",
+            last: "หน้าสุดท้าย",
+            next: "ถัดไป",
+            previous: "ก่อนหน้า"
+          },
+          emptyTable: "ไม่มีข้อมูลในตาราง",
+          zeroRecords: "ไม่พบข้อมูลที่ตรงกัน"
+        },
+        data: permissionData,
+        columns: [
+          { title: "Request ID" },
+          { 
+            title: "สถานะ",
+            render: function(data) {
+              if (data === "อนุมัติ" || data === "อนุญาต") {
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">' + data + '</span>';
+              } else if (data === "ไม่อนุมัติ" || data === "ยกเลิก") {
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800">' + data + '</span>';
+              } else {
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">' + (data || 'รอพิจารณา') + '</span>';
+              }
+            }
+          },
+          { title: "ผู้ขออนุญาต" },
+          { title: "รถหมายเลขทะเบียน" },
+          { title: "ออกเดินทางวันที่" },
+          {
+            title: "การจัดการ",
+            render: function(data, type, row) {
+              return '<button type="button" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium mr-1.5 shadow-sm" onclick="viewCarPermission(this)" title="ตรวจสอบคำร้อง"><i class="fa-solid fa-pen-to-square"></i></button>' +
+                     '<button type="button" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-medium shadow-sm" onclick="viewQueue(this)" title="ดูคิวรถ"><i class="fa-solid fa-eye"></i></button>';
+            }
+          }
+        ]
+      });
+    }
+
+    function refreshCarPermission() {
+      showGlobalSpinner('กำลังรีเฟรชข้อมูลคำขอ...');
+      google.script.run.withSuccessHandler((data) => {
+        hideGlobalSpinner();
+        getPermissionDataSuccess(data);
+      }).getPermissionData(userDataArray);
+    }
+
+    function viewCarPermission(el) {
+      let requestId = el.closest('tr').cells[0].innerText.trim();
+      showGlobalSpinner('กำลังโหลดรายละเอียดคำร้อง...');
+      document.getElementById('viewCarPermissionForm').reset();
+      google.script.run.withSuccessHandler(showViewCarPermissionModal).getviewCarPermissionData(requestId);
+    }
+
+    function showViewCarPermissionModal(result) {
+      hideGlobalSpinner();
+      openTailwindModal('viewCarPermissionModal');
+
+      document.getElementById('requestIdModal').value = result[0] || '';
+      document.getElementById('requestStatusModal').value = result[1] || '';
+      document.getElementById('requestTimestampModal').value = result[2] || '';
+      document.getElementById('dearHeaderPermissionModal').value = result[3] || '';
+      document.getElementById('carUserPermissionNameModal').value = result[4] || '';
+      document.getElementById('carUserPermissionPositionModal').value = result[5] || '';
+      document.getElementById('carPermissionRegisNumberModal').value = result[6] || '';
+      document.getElementById('destinationPermissionModal').value = result[7] || '';
+      document.getElementById('missionPermissionModal').value = result[8] || '';
+      document.getElementById('peopleNumberPermissionModal').value = result[9] || '';
+      document.getElementById('departureDatePermissionModal').value = result[10] || '';
+      document.getElementById('departureTimePermissionModal').value = result[11] || '';
+      document.getElementById('arrivedDatePermissionModal').value = result[12] || '';
+      document.getElementById('arrivedTimePermissionModal').value = result[13] || '';
+      document.getElementById('sectionHeaderPermissionModal').value = result[14] || '';
+
+      document.getElementById('user2Allow').classList.add('hidden');
+      document.getElementById('user3Allow').classList.add('hidden');
+
+      if (userDataArray[5] === "User" && userDataArray[6] == 2) {
+        document.getElementById('user2Allow').classList.remove('hidden');
+      } else if (userDataArray[5] === "User" && userDataArray[6] == 3) {
+        document.getElementById('user3Allow').classList.remove('hidden');
+      }
+    }
+
+    function user2ApproveSwal() {
+      event.preventDefault();
+      let requestId = document.getElementById('requestIdModal').value;
+      let user2Signature = userDataArray[10];
+      let user2FullName = userDataArray[2];
+      let user2Section = userDataArray[4];
+      let user2SectionReplace = userDataArray[11] || '';
+
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการเสนอเพื่อพิจารณา?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        confirmButtonColor: "#059669",
+        cancelButtonText: "ยกเลิก"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังอัปเดตข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(updateApproveSuccess).user2Approve(requestId, user2Signature, user2FullName, user2Section, user2SectionReplace);
+        }
+      });
+    }
+
+    function user2NotApproveSwal() {
+      event.preventDefault();
+      let requestId = document.getElementById('requestIdModal').value;
+
+      Swal.fire({
+        icon: "warning",
+        title: "ยืนยันการยกเลิกคำร้อง?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยันยกเลิก",
+        confirmButtonColor: "#e11d48",
+        cancelButtonText: "ย้อนกลับ"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังอัปเดตข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(updateApproveSuccess).user2NotApprove(requestId);
+        }
+      });
+    }
+
+    function user3ApproveSwal() {
+      event.preventDefault();
+      let requestId = document.getElementById('requestIdModal').value;
+      let user3Signature = userDataArray[10];
+      let user3FullName = userDataArray[2];
+      let user3Section = userDataArray[4];
+      let approveWord = 'อนุญาต';
+
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการอนุญาตให้ใช้รถ?",
+        showCancelButton: true,
+        confirmButtonText: "อนุญาต",
+        confirmButtonColor: "#059669",
+        cancelButtonText: "ยกเลิก"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังบันทึกการอนุมัติ...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(updateApproveSuccess).user3Approve(approveWord, requestId, user3Signature, user3FullName, user3Section);
+        }
+      });
+    }
+
+    function user3NotApproveSwal() {
+      event.preventDefault();
+      let requestId = document.getElementById('requestIdModal').value;
+      let user3Signature = userDataArray[10];
+      let approveWord = 'ไม่อนุญาต';
+
+      Swal.fire({
+        icon: "warning",
+        title: "ยืนยัน ไม่อนุญาต ให้ใช้รถ?",
+        showCancelButton: true,
+        confirmButtonText: "ไม่อนุญาต",
+        confirmButtonColor: "#e11d48",
+        cancelButtonText: "ยกเลิก"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังบันทึกข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(updateApproveSuccess).user3Approve(approveWord, requestId, user3Signature);
+        }
+      });
+    }
+
+    function updateApproveSuccess() {
+      closeTailwindModal('viewCarPermissionModal');
+      Swal.fire({
+        icon: 'success',
+        title: 'อัปเดตข้อมูลสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      refreshCarPermission();
+    }
+
+    // --- Queue Table ---
+    function viewQueue(el) {
+      let carRegisNumber = el.closest('tr').cells[3].innerText.trim();
+      openQueueTable(carRegisNumber);
+    }
+
+    function openQueueTable(carRegisNumberQueue) {
+      if (carRegisNumberQueue && carRegisNumberQueue !== "") {
+        showGlobalSpinner('กำลังดึงตารางคิวรถ...');
+        google.script.run.withSuccessHandler(showQueueTable).getQueueData(carRegisNumberQueue);
+      } else {
+        Swal.fire({
+          icon: 'info',
+          title: 'กรุณาเลือกหมายเลขทะเบียนรถก่อน'
+        });
+      }
+    }
+
+    function showQueueTable(queueData) {
+      hideGlobalSpinner();
+      openTailwindModal('showQueueTableModal');
+
+      $('#data_table_showQueueTable').DataTable({
+        destroy: true,
+        language: {
+          search: "ค้นหา:",
+          lengthMenu: "แสดง _MENU_ รายการ",
+          info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+          infoEmpty: "แสดง 0 ถึง 0 จาก 0 รายการ",
+          infoFiltered: "(กรองจากทั้งหมด _MAX_ รายการ)",
+          paginate: {
+            first: "หน้าแรก",
+            last: "หน้าสุดท้าย",
+            next: "ถัดไป",
+            previous: "ก่อนหน้า"
+          },
+          emptyTable: "ไม่มีข้อมูลในตาราง",
+          zeroRecords: "ไม่พบข้อมูลที่ตรงกัน"
+        },
+        data: queueData,
+        columns: [
+          { title: "ผู้ขออนุญาต" },
+          { title: "ออกเดินทางวันที่" },
+          { title: "เวลา" },
+          { title: "กลับถึงวันที่" },
+          { title: "เวลา" },
+          { title: "สถานที่ไป" },
+          { title: "ภารกิจ" }
+        ]
+      });
+    }
+
+    // --- Admin: User Management ---
+    function getUserDataForAdminSuccess(userDataForAdmin) {
+      $('#data_table_userDataForAdmin').DataTable({
+        destroy: true,
+        language: {
+          search: "ค้นหา:",
+          lengthMenu: "แสดง _MENU_ รายการ",
+          info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+          infoEmpty: "แสดง 0 ถึง 0 จาก 0 รายการ",
+          infoFiltered: "(กรองจากทั้งหมด _MAX_ รายการ)",
+          paginate: {
+            first: "หน้าแรก",
+            last: "หน้าสุดท้าย",
+            next: "ถัดไป",
+            previous: "ก่อนหน้า"
+          },
+          emptyTable: "ไม่มีข้อมูลในตาราง",
+          zeroRecords: "ไม่พบข้อมูลที่ตรงกัน"
+        },
+        data: userDataForAdmin,
+        columns: [
+          { title: "Username" },
+          { title: "ชื่อผู้ใช้" },
+          { title: "ตำแหน่ง" },
+          { 
+            title: "สิทธิ์ / สถานะ",
+            render: function(data) {
+              return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-800">' + data + '</span>';
+            }
+          },
+          {
+            title: "การจัดการ",
+            render: function() {
+              return '<button type="button" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium shadow-sm" onclick="updateUserDataForAdmin(this)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>';
+            }
+          }
+        ]
+      });
+    }
+
+    function refreshUserDataForAdmin() {
+      google.script.run.withSuccessHandler(getUserDataForAdminSuccess).getUserDataForAdmin();
+    }
+
+    function openNewUserDataForm() {
+      document.getElementById('newUserDataForm').reset();
+      document.getElementById("newUserProfileImagePreview").src = "https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW";
+      document.getElementById("newUserSignatureImagePreview").src = "https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx";
+      openTailwindModal('newUserDataFormModal');
+    }
+
+    function previewNewUserProfileImage() {
+      const file = document.getElementById("newUserProfileImage").files[0];
+      if (file) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById("newUserProfileImagePreview").src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function previewNewUserSignatureImage() {
+      const file = document.getElementById("newUserSignatureImage").files[0];
+      if (file) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById("newUserSignatureImagePreview").src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function previewUpdateUserProfileImage() {
+      const file = document.getElementById("updateUserProfileImage").files[0];
+      if (file) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById("updateUserProfileImagePreview").src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function previewUpdateUserSignatureImage() {
+      const file = document.getElementById("updateUserSignatureImage").files[0];
+      if (file) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById("updateUserSignatureImagePreview").src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function roleAdmin(roleId, levelId) {
+      let role = document.getElementById(roleId);
+      let level = document.getElementById(levelId);
+      if (role && level) {
+        if (role.value === "Admin") {
+          level.value = "";
+          level.disabled = true;
+        } else {
+          level.disabled = false;
+        }
+      }
+    }
+
+    function newUserDataFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการเพิ่มผู้ใช้ใหม่?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        confirmButtonColor: "#2563eb",
+        cancelButtonText: "ยกเลิก"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังเพิ่มผู้ใช้ใหม่...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(addNewUserDataSuccess).addNewUserData(obj);
+        }
+      });
+    }
+
+    function addNewUserDataSuccess() {
+      closeTailwindModal('newUserDataFormModal');
+      Swal.fire({
+        icon: 'success',
+        title: 'เพิ่มผู้ใช้ใหม่สำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      refreshUserDataForAdmin();
+    }
+
+    function updateUserDataForAdmin(el) {
+      let username = el.closest('tr').cells[0].innerText.trim();
+      document.getElementById('updateUserDataForm').reset();
+
+      if (userDataArray && username === userDataArray[0]) {
+        Swal.fire({
+          icon: 'info',
+          title: 'ข้อแนะนำ',
+          text: 'โปรดดำเนินการแก้ไขข้อมูลของท่านที่เมนู ข้อมูลส่วนตัว'
+        });
+      } else {
+        showGlobalSpinner('กำลังดึงข้อมูลผู้ใช้...');
+        google.script.run.withSuccessHandler(showUserDataModal).getUserDataUpdate(username);
+      }
+    }
+
+    function showUserDataModal(userModalResult) {
+      hideGlobalSpinner();
+      openTailwindModal('updateUserDataFormModal');
+
+      document.getElementById('updateUserUsername').value = userModalResult[0] || '';
+      document.getElementById('updateUserPassword').value = userModalResult[1] || '';
+      document.getElementById('updateUserNameUser').value = userModalResult[2] || '';
+      document.getElementById('updateUserOrganization').value = userModalResult[3] || '';
+      document.getElementById('updateUserPosition').value = userModalResult[4] || '';
+      document.getElementById('updateUserRole').value = userModalResult[5] || 'User';
+
+      roleAdmin('updateUserRole', 'updateUserLevel');
+
+      document.getElementById('updateUserLevel').value = userModalResult[6] || '1';
+      document.getElementById('updateUserEmail').value = userModalResult[7] || '';
+      document.getElementById('updateUserToken').value = userModalResult[8] || '';
+
+      if (!userModalResult[9] || userModalResult[9] === "") {
+        document.getElementById("updateUserProfileImagePreview").src = "https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW";
+      } else {
+        var match = userModalResult[9].match(/\/d\/([\w-]{25,})/);
+        var id = match ? match[1] : userModalResult[9];
+        document.getElementById("updateUserProfileImagePreview").src = "https://lh3.googleusercontent.com/d/" + id;
+      }
+
+      if (!userModalResult[10] || userModalResult[10] === "") {
+        document.getElementById("updateUserSignatureImagePreview").src = "https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx";
+      } else {
+        var match2 = userModalResult[10].match(/\/d\/([\w-]{25,})/);
+        var id2 = match2 ? match2[1] : userModalResult[10];
+        document.getElementById("updateUserSignatureImagePreview").src = "https://lh3.googleusercontent.com/d/" + id2;
+      }
+
+      if (userModalResult[11] && document.getElementById('updateUserPositionReplace')) {
+        document.getElementById('updateUserPositionReplace').value = userModalResult[11];
+      }
+    }
+
+    function updateUserDataFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการบันทึกการแก้ไขผู้ใช้?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        confirmButtonColor: "#d97706",
+        cancelButtonText: "ยกเลิก"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังอัปเดตข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(updateUserDataSuccess).updateUserData(obj);
+        }
+      });
+    }
+
+    function updateUserDataSuccess(resultUpdate) {
+      closeTailwindModal('updateUserDataFormModal');
+      Swal.fire({
+        icon: 'success',
+        title: 'อัปเดตข้อมูลผู้ใช้สำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      refreshUserDataForAdmin();
+
+      if (resultUpdate && userDataArray && resultUpdate[0] === userDataArray[0]) {
+        localStorage.setItem("userDataArrayLS", JSON.stringify(resultUpdate));
+        userDataArray = JSON.parse(localStorage.getItem("userDataArrayLS"));
+        document.getElementById('usernameShow').innerHTML = userDataArray[2];
+        showPersonalData();
+      }
+    }
+
+    // --- Admin: Car Management ---
+    function getCarDataForAdminSuccess(carDataForAdmin) {
+      $('#data_table_carDataForAdmin').DataTable({
+        destroy: true,
+        language: {
+          search: "ค้นหา:",
+          lengthMenu: "แสดง _MENU_ รายการ",
+          info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+          infoEmpty: "แสดง 0 ถึง 0 จาก 0 รายการ",
+          infoFiltered: "(กรองจากทั้งหมด _MAX_ รายการ)",
+          paginate: {
+            first: "หน้าแรก",
+            last: "หน้าสุดท้าย",
+            next: "ถัดไป",
+            previous: "ก่อนหน้า"
+          },
+          emptyTable: "ไม่มีข้อมูลในตาราง",
+          zeroRecords: "ไม่พบข้อมูลที่ตรงกัน"
+        },
+        data: carDataForAdmin,
+        columns: [
+          { title: "Car ID" },
+          { title: "ประเภท" },
+          { title: "ชื่อรถ" },
+          { title: "หมายเลขทะเบียน" },
+          {
+            title: "การจัดการ",
+            render: function() {
+              return '<button type="button" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium shadow-sm" onclick="updateCarDataForAdmin(this)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>';
+            }
+          }
+        ]
+      });
+    }
+
+    function refreshCarDataForAdmin() {
+      google.script.run.withSuccessHandler(getCarDataForAdminSuccess).getCarDataForAdmin();
+    }
+
+    function openNewCarDataForm() {
+      document.getElementById('newCarDataForm').reset();
+      openTailwindModal('newCarDataFormModal');
+    }
+
+    function newCarDataFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการเพิ่มข้อมูลรถใหม่?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        confirmButtonColor: "#2563eb",
+        cancelButtonText: "ยกเลิก"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังเพิ่มข้อมูลรถใหม่...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(addNewCarDataSuccess).addNewCarData(obj);
+        }
+      });
+    }
+
+    function addNewCarDataSuccess() {
+      closeTailwindModal('newCarDataFormModal');
+      Swal.fire({
+        icon: 'success',
+        title: 'เพิ่มข้อมูลรถสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      refreshCarDataForAdmin();
+      google.script.run.withSuccessHandler(getCarDataForUserSuccess).getCarDataForUser();
+    }
+
+    function updateCarDataForAdmin(el) {
+      let carId = el.closest('tr').cells[0].innerText.trim();
+      showGlobalSpinner('กำลังดึงข้อมูลรถยนต์...');
+      document.getElementById('updateCarDataForm').reset();
+      google.script.run.withSuccessHandler(showCarDataModal).getCarDataUpdate(carId);
+    }
+
+    function showCarDataModal(carModalResult) {
+      hideGlobalSpinner();
+      openTailwindModal('updateCarDataFormModal');
+
+      document.getElementById('updateCarID').value = carModalResult[0] || '';
+      document.getElementById('updateCarType').value = carModalResult[1] || '';
+      document.getElementById('updateCarNo').value = carModalResult[2] || '';
+      document.getElementById('updateCarName').value = carModalResult[3] || '';
+      document.getElementById('updateCarModelType').value = carModalResult[4] || '';
+      document.getElementById('updateCarRegisNumber').value = carModalResult[5] || '';
+      document.getElementById('updateCarAffiliation').value = carModalResult[6] || '';
+      document.getElementById('updateCarPrice').value = carModalResult[7] || '';
+      document.getElementById('updateCarGetDate').value = carModalResult[8] || '';
+      document.getElementById('updateCarReleaseDate').value = carModalResult[9] || '';
+      document.getElementById('updateCarNote').value = carModalResult[10] || '';
+    }
+
+    function updateCarDataFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการแก้ไขข้อมูลรถ?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        confirmButtonColor: "#d97706",
+        cancelButtonText: "ยกเลิก"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังอัปเดตข้อมูลรถ...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(updateCarDataSuccess).updateCarData(obj);
+        }
+      });
+    }
+
+    function updateCarDataSuccess() {
+      closeTailwindModal('updateCarDataFormModal');
+      Swal.fire({
+        icon: 'success',
+        title: 'อัปเดตข้อมูลรถสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      refreshCarDataForAdmin();
+      google.script.run.withSuccessHandler(getCarDataForUserSuccess).getCarDataForUser();
+    }
+
+    // --- Admin: Settings ---
+    function getOrgDataForAdminSuccess(orgDataForAdmin) {
+      if (!orgDataForAdmin) return;
+      document.getElementById('organizationLogoURLForAdmin').value = orgDataForAdmin[0] || '';
+      document.getElementById('organizationNameForAdmin').value = orgDataForAdmin[1] || '';
+      document.getElementById('organizationDistrictForAdmin').value = orgDataForAdmin[2] || '';
+      document.getElementById('organizationProvinceForAdmin').value = orgDataForAdmin[3] || '';
+      document.getElementById('organizationAdminNameForAdmin').value = orgDataForAdmin[4] || '';
+      document.getElementById('organizationAdminTelForAdmin').value = orgDataForAdmin[5] || '';
+      document.getElementById('organizationLogInImageURLForAdmin').value = orgDataForAdmin[6] || '';
+
+      document.getElementById('lineGroupToken').value = orgDataForAdmin[8] || '';
+
+      document.getElementById('profileImageFolderURLForAdmin').value = orgDataForAdmin[10] || '';
+      document.getElementById('signatureImageFolderURLForAdmin').value = orgDataForAdmin[11] || '';
+
+      document.getElementById('form3TemplateURLForAdmin').value = orgDataForAdmin[13] || '';
+      document.getElementById('form3FolderURLForAdmin').value = orgDataForAdmin[14] || '';
+
+      document.getElementById('form5TemplateURLForAdmin').value = orgDataForAdmin[16] || '';
+      document.getElementById('form5FolderURLForAdmin').value = orgDataForAdmin[17] || '';
+
+      document.getElementById('execURL').value = orgDataForAdmin[19] || '';
+      document.getElementById('form1URL').value = orgDataForAdmin[20] || '';
+      document.getElementById('form2URL').value = orgDataForAdmin[21] || '';
+      document.getElementById('form4URL').value = orgDataForAdmin[22] || '';
+      document.getElementById('form6URL').value = orgDataForAdmin[23] || '';
+      document.getElementById('oilWithdrawURL').value = orgDataForAdmin[24] || '';
+    }
+
+    function editOrganizationDataFormSubmit(obj) {
+      event.preventDefault();
+      Swal.fire({
+        icon: "question",
+        title: "ยืนยันการอัปเดตการตั้งค่าระบบ?",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        confirmButtonColor: "#d97706",
+        cancelButtonText: "ยกเลิก"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังบันทึกการตั้งค่า...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          google.script.run.withSuccessHandler(editOrganizationDataSuccess).editOrganizationData(obj);
+        }
+      });
+    }
+
+    function editOrganizationDataSuccess() {
+      Swal.fire({
+        icon: 'success',
+        title: 'อัปเดตการตั้งค่าสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      google.script.run.withSuccessHandler(showResult).getSetting();
+      google.script.run.withSuccessHandler(getURLSuccess).getReportURL();
+    }
+  </script>
+
+</body>
+</html>
