@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบขออนุญาตใช้รถส่วนกลาง</title>
+  <title>[Preview] ระบบขออนุญาตใช้รถส่วนกลาง (จำลองการทำงาน)</title>
   <base target="_top">
 
   <!-- Google Fonts: Prompt & K2D -->
@@ -54,7 +54,6 @@
     body {
       font-family: 'Prompt', 'K2D', sans-serif;
     }
-    /* DataTables Custom Polish */
     .dataTables_wrapper .dataTables_length select,
     .dataTables_wrapper .dataTables_filter input {
       border: 1px solid #cbd5e1;
@@ -95,26 +94,266 @@
       border: 1px solid #bfdbfe !important;
       border-radius: 0.375rem;
     }
-    /* Modal Backdrop Transitions */
     .modal-backdrop-custom {
       background-color: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(4px);
     }
-    /* Hide scrollbar for tabs */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
   </style>
+
+  <!-- MOCK BACKEND ENGINE FOR LOCAL PREVIEW -->
+  <script>
+    (function() {
+      // Mock Data Store
+      const MOCK_DB = {
+        setting: [
+          "",
+          "โรงเรียนตัวอย่างวิทยาคม (สังกัด สพฐ.)",
+          "เมือง",
+          "กรุงเทพมหานคร",
+          "นายสมศักดิ์ ผู้ดูแลระบบ",
+          "081-234-5678",
+          ""
+        ],
+        reportURLs: [
+          "https://docs.google.com/spreadsheets/d/mock1",
+          "https://docs.google.com/spreadsheets/d/mock2",
+          "https://docs.google.com/spreadsheets/d/mock3",
+          "https://docs.google.com/spreadsheets/d/mock4",
+          "https://docs.google.com/spreadsheets/d/mock5"
+        ],
+        cars: [
+          "นข 1234 กทม. (รถตู้ Toyota Commuter VIP)",
+          "1กข 5678 กทม. (รถเก๋ง Toyota Camry 2.5G)",
+          "บท 9999 กทม. (รถกระบะ Isuzu D-Max 4 ประตู)",
+          "3ฒพ 4321 กทม. (รถบัสปรับอากาศ 30 ที่นั่ง)"
+        ],
+        adminCars: [
+          ["CAR-001", "รถตู้", "Toyota Commuter VIP สีบรอนซ์เงิน", "นข 1234 กทม."],
+          ["CAR-002", "รถเก๋ง", "Toyota Camry 2.5G สีดำ", "1กข 5678 กทม."],
+          ["CAR-003", "รถกระบะ", "Isuzu D-Max 4 ประตู สีขาว", "บท 9999 กทม."],
+          ["CAR-004", "รถบัส", "รถบัสปรับอากาศ Hino 30 ที่นั่ง", "3ฒพ 4321 กทม."]
+        ],
+        users: {
+          "admin": [
+            "admin", "1234", "นายสมศักดิ์ ผู้ดูแลระบบ", "กลุ่มบริหารงานทั่วไป",
+            "นักวิชาการคอมพิวเตอร์ชำนาญการ", "Admin", "", "admin@school.ac.th", "token_admin_sample",
+            "", "", "ปฏิบัติราชการแทน ผู้อำนวยการ"
+          ],
+          "approver2": [
+            "approver2", "1234", "นายวิชัย สุขใจ", "กลุ่มบริหารงบประมาณและแผน",
+            "รองผู้อำนวยการสถานศึกษา", "User", "2", "wichai@school.ac.th", "token_approver2",
+            "", "", "ปฏิบัติราชการแทน ผู้อำนวยการ"
+          ],
+          "director": [
+            "director", "1234", "ดร.สุชาติ มุ่งมั่น", "ผู้บริหารสถานศึกษา",
+            "ผู้อำนวยการโรงเรียน", "User", "3", "director@school.ac.th", "token_director",
+            "", "", ""
+          ],
+          "user1": [
+            "user1", "1234", "นายสมชาย ใจดี", "กลุ่มสาระการเรียนรู้วิทยาศาสตร์",
+            "ครูชำนาญการพิเศษ", "User", "1", "somchai@school.ac.th", "token_user1",
+            "", "", ""
+          ]
+        },
+        permissions: [
+          ["REQ-20261111-001", "รอพิจารณา", "นายสมชาย ใจดี", "นข 1234 กทม. (รถตู้ Toyota Commuter VIP)", "2026-11-15"],
+          ["REQ-20261110-002", "อนุญาต", "นางสาวสมหญิง รักงาน", "บท 9999 กทม. (รถกระบะ Isuzu D-Max 4 ประตู)", "2026-11-12"],
+          ["REQ-20261109-003", "เสนอพิจารณา", "นายประสิทธิ์ ขยันยิ่ง", "1กข 5678 กทม. (รถเก๋ง Toyota Camry 2.5G)", "2026-11-14"]
+        ],
+        queue: [
+          ["นายสมชาย ใจดี", "2026-11-15", "08:30", "2026-11-15", "16:30", "ศูนย์ราชการเฉลิมพระเกียรติฯ", "เข้าร่วมประชุมสัมมนาวิชาการ"],
+          ["นายประสิทธิ์ ขยันยิ่ง", "2026-11-18", "09:00", "2026-11-18", "15:00", "กระทรวงศึกษาธิการ", "นำนักเรียนเข้ารับรางวัลระดับชาติ"]
+        ]
+      };
+
+      // Helper to extract values safely from Form elements or Objects
+      function parseFormInput(raw) {
+        if (!raw) return {};
+        var out = {};
+        if (typeof HTMLFormElement !== 'undefined' && raw instanceof HTMLFormElement) {
+          for (var i = 0; i < raw.elements.length; i++) {
+            var el = raw.elements[i];
+            if (el.name) {
+              out[el.name] = el.value;
+            }
+          }
+          return out;
+        }
+        if (raw && raw.elements) {
+          for (var j = 0; j < raw.elements.length; j++) {
+            var item = raw.elements[j];
+            if (item.name) {
+              out[item.name] = item.value;
+            }
+          }
+          return out;
+        }
+        if (typeof raw === 'object') {
+          for (var k in raw) {
+            if (raw[k] && typeof raw[k] === 'object' && 'value' in raw[k]) {
+              out[k] = raw[k].value;
+            } else {
+              out[k] = raw[k];
+            }
+          }
+          return out;
+        }
+        return {};
+      }
+
+      // Mock Handler
+      function handleMock(method, args, callback) {
+        console.log(`[MOCK GAS CALL] -> ${method}`, args);
+        let result = null;
+
+        if (method === 'getSetting') {
+          result = MOCK_DB.setting;
+        } else if (method === 'getReportURL') {
+          result = MOCK_DB.reportURLs;
+        } else if (method === 'getURL') {
+          result = window.location.href;
+        } else if (method === 'userLogin') {
+          var formObj = parseFormInput(args[0]);
+          var u = formObj.username ? String(formObj.username).trim() : '';
+          var p = formObj.password ? String(formObj.password).trim() : '';
+          var uLower = u.toLowerCase();
+
+          if (MOCK_DB.users[u]) {
+            result = MOCK_DB.users[u];
+          } else if (uLower === 'admin') {
+            result = MOCK_DB.users['admin'];
+          } else if (uLower.indexOf('approver') !== -1 || uLower === 'user2') {
+            result = MOCK_DB.users['approver2'];
+          } else if (uLower === 'director' || uLower === 'user3') {
+            result = MOCK_DB.users['director'];
+          } else if (uLower === 'user1' || u !== '') {
+            result = MOCK_DB.users['user1'] || [u, p, "ผู้ใช้ทดสอบ (" + u + ")", "กลุ่มบริหารงานทั่วไป", "ครูผู้ช่วย", "User", "1", u + "@example.com", "", "", "", ""];
+          } else {
+            result = MOCK_DB.users['admin'];
+          }
+        } else if (method === 'getCarDataForUser') {
+          result = MOCK_DB.cars;
+        } else if (method === 'getCreditLimit') {
+          result = "48,500.00";
+        } else if (method === 'getPermissionData') {
+          result = MOCK_DB.permissions;
+        } else if (method === 'getviewCarPermissionData') {
+          result = [
+            args[0] || "REQ-20261111-001",
+            "รอพิจารณา",
+            "2026-11-11 09:30:00",
+            "ผู้อำนวยการโรงเรียน",
+            "นายสมชาย ใจดี",
+            "ครูชำนาญการพิเศษ",
+            "นข 1234 กทม. (รถตู้ Toyota Commuter VIP)",
+            "ศูนย์ราชการเฉลิมพระเกียรติ ถนนแจ้งวัฒนะ",
+            "นำนักเรียนเข้าร่วมการแข่งขันโครงงานวิทยาศาสตร์",
+            "5",
+            "2026-11-15",
+            "07:30",
+            "2026-11-15",
+            "17:00",
+            "กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี"
+          ];
+        } else if (method === 'getQueueData') {
+          result = MOCK_DB.queue;
+        } else if (method === 'getCarDataForAdmin') {
+          result = MOCK_DB.adminCars;
+        } else if (method === 'getUserDataForAdmin') {
+          result = [
+            ["admin", "นายสมศักดิ์ ผู้ดูแลระบบ", "นักวิชาการคอมพิวเตอร์", "Admin"],
+            ["approver2", "นายวิชัย สุขใจ", "รองผู้อำนวยการ", "User (Level 2)"],
+            ["director", "ดร.สุชาติ มุ่งมั่น", "ผู้อำนวยการ", "User (Level 3)"],
+            ["user1", "นายสมชาย ใจดี", "ครูชำนาญการพิเศษ", "User (Level 1)"]
+          ];
+        } else if (method === 'getCarDataUpdate') {
+          result = ["CAR-001", "รถตู้", "1", "Toyota Commuter VIP", "Commuter D4D", "นข 1234 กทม.", "กลุ่มบริหารงานทั่วไป", "1350000", "2021-05-10", "", "สภาพดีพร้อมใช้งาน"];
+        } else if (method === 'getUserDataUpdate') {
+          result = MOCK_DB.users[args[0]] || MOCK_DB.users['admin'];
+        } else if (method === 'getOrgDataForAdmin') {
+          result = [
+            "https://placehold.co/100x100/png?text=Logo",
+            "โรงเรียนตัวอย่างวิทยาคม",
+            "เมือง",
+            "กรุงเทพมหานคร",
+            "นายสมศักดิ์ ผู้ดูแลระบบ",
+            "081-234-5678",
+            "https://placehold.co/600x800/png?text=School+Van",
+            "",
+            "line_token_group_sample",
+            "",
+            "https://drive.google.com/drive/folders/sample_profile",
+            "https://drive.google.com/drive/folders/sample_signature",
+            "",
+            "https://docs.google.com/document/d/sample_form3",
+            "https://drive.google.com/drive/folders/sample_folder3",
+            "",
+            "https://docs.google.com/document/d/sample_form5",
+            "https://drive.google.com/drive/folders/sample_folder5",
+            "",
+            "https://script.google.com/macros/s/exec_url_sample/exec",
+            "https://docs.google.com/spreadsheets/d/sample1",
+            "https://docs.google.com/spreadsheets/d/sample2",
+            "https://docs.google.com/spreadsheets/d/sample4",
+            "https://docs.google.com/spreadsheets/d/sample6",
+            "https://docs.google.com/spreadsheets/d/sample_oil",
+            "50,000.00"
+          ];
+        } else {
+          result = true;
+        }
+
+        // Simulate realistic network delay
+        setTimeout(() => {
+          if (callback && typeof callback === 'function') {
+            callback(result);
+          }
+        }, 350);
+      }
+
+      // Install Mock Proxy
+      window.google = window.google || {};
+      window.google.script = window.google.script || {};
+      window.google.script.run = new Proxy({}, {
+        get: function(target, prop) {
+          if (prop === 'withSuccessHandler') {
+            return function(successCallback) {
+              return new Proxy({}, {
+                get: function(t, method) {
+                  return function(...args) {
+                    handleMock(method, args, successCallback);
+                  };
+                }
+              });
+            };
+          }
+          return function(...args) {
+            handleMock(prop, args, null);
+          };
+        }
+      });
+    })();
+  </script>
 </head>
 <body class="h-full text-slate-800 antialiased bg-slate-50 flex flex-col">
 
-  <!-- ========================================== -->
+  <!-- DEMO PREVIEW BANNER -->
+  <aside aria-label="Demo mode banner" class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white text-xs py-2 px-4 shadow-sm flex items-center justify-between z-50">
+    <div class="flex items-center gap-2 font-medium">
+      <span class="inline-block w-2 h-2 rounded-full bg-white animate-pulse"></span>
+      <span class="font-bold">[โหมดทดสอบตัวอย่าง - Local Mock Mode]:</span>
+      <span class="hidden sm:inline">หน้าเว็บนี้จำลองการทำงานของ Google Apps Script เพื่อให้คุณทดลองคลิก ดูหน้าตา และทดสอบระบบได้ทันทีโดยไม่กระทบฐานข้อมูลจริง</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-[11px] opacity-90 hidden md:inline">เลือกจำลองสิทธิ์:</span>
+      <button onclick="demoQuickLogin('admin')" class="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-semibold transition">Admin</button>
+      <button onclick="demoQuickLogin('approver2')" class="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-semibold transition">ผู้พิจารณา (Level 2)</button>
+      <button onclick="demoQuickLogin('director')" class="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-semibold transition">ผู้อนุมัติ (Level 3)</button>
+      <button onclick="demoQuickLogin('user1')" class="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-semibold transition">ผู้ใช้ทั่วไป</button>
+    </div>
+  </aside>
+
   <!-- 1. FULLSCREEN LOADING SPINNER OVERLAY -->
-  <!-- ========================================== -->
   <div id="spinnerLoadingModal" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-backdrop-custom transition-opacity duration-300">
     <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm mx-4 transform transition-all">
       <div class="relative w-16 h-16 mb-4">
@@ -128,10 +367,8 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
   <!-- 2. LOGIN PAGE VIEW (p_login) -->
-  <!-- ========================================== -->
-  <div id="p_login" class="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
+  <div id="p_login" class="min-h-[calc(100vh-36px)] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
     <div class="max-w-4xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 grid grid-cols-1 md:grid-cols-2">
       
       <!-- Left side: Login form -->
@@ -145,8 +382,30 @@
               </div>
             </div>
             <h1 class="text-2xl font-bold text-slate-900 tracking-tight">ระบบขออนุญาตใช้รถ</h1>
-            <p id="organizationName" class="text-sm font-medium text-brand-700 mt-1"></p>
-            <p id="organizationAddress" class="text-xs text-slate-500 mt-0.5"></p>
+            <p id="organizationName" class="text-sm font-medium text-brand-700 mt-1">โรงเรียนตัวอย่างวิทยาคม</p>
+            <p id="organizationAddress" class="text-xs text-slate-500 mt-0.5">อำเภอเมือง จังหวัดกรุงเทพมหานคร</p>
+          </div>
+
+          <!-- Quick Login Demo Buttons -->
+          <div class="mb-4 p-3 bg-amber-50 rounded-2xl border border-amber-200/80">
+            <div class="text-[11px] font-bold text-amber-800 mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
+              คลิกปุ่มเพื่อทดสอบเข้าสู่ระบบแบบด่วน:
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <button type="button" onclick="demoQuickLogin('admin')" class="py-1.5 px-2 bg-white hover:bg-amber-100 text-slate-700 font-medium rounded-xl border border-amber-200 text-center shadow-xs transition">
+                👑 แอดมิน (Admin)
+              </button>
+              <button type="button" onclick="demoQuickLogin('approver2')" class="py-1.5 px-2 bg-white hover:bg-amber-100 text-slate-700 font-medium rounded-xl border border-amber-200 text-center shadow-xs transition">
+                ✍️ ผู้พิจารณา (Level 2)
+              </button>
+              <button type="button" onclick="demoQuickLogin('director')" class="py-1.5 px-2 bg-white hover:bg-amber-100 text-slate-700 font-medium rounded-xl border border-amber-200 text-center shadow-xs transition">
+                ✅ ผู้อนุมัติ (Level 3)
+              </button>
+              <button type="button" onclick="demoQuickLogin('user1')" class="py-1.5 px-2 bg-white hover:bg-amber-100 text-slate-700 font-medium rounded-xl border border-amber-200 text-center shadow-xs transition">
+                🚗 ครู/ผู้ขอใช้ทั่วไป
+              </button>
+            </div>
           </div>
 
           <!-- Login Form -->
@@ -157,7 +416,7 @@
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   <i class="fa-solid fa-user"></i>
                 </div>
-                <input type="text" id="username" name="username" required
+                <input type="text" id="username" name="username" value="admin" required
                   class="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all placeholder:text-slate-400"
                   placeholder="กรอกชื่อผู้ใช้งาน">
               </div>
@@ -169,7 +428,7 @@
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   <i class="fa-solid fa-lock"></i>
                 </div>
-                <input type="password" id="password" name="password" required
+                <input type="password" id="password" name="password" value="1234" required
                   class="block w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-600 transition-all placeholder:text-slate-400"
                   placeholder="••••••••">
                 <button type="button" onclick="togglePasswordVisibility('password', this)" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
@@ -187,17 +446,17 @@
         </div>
 
         <!-- Admin Contact Info Card -->
-        <div class="mt-8 pt-6 border-t border-slate-100 bg-slate-50/70 p-4 rounded-2xl flex items-center gap-3">
+        <div class="mt-6 pt-4 border-t border-slate-100 bg-slate-50/70 p-4 rounded-2xl flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-blue-100 text-brand-700 flex items-center justify-center flex-shrink-0 text-base">
             <i class="fa-solid fa-headset"></i>
           </div>
           <div class="text-xs text-slate-600 flex-1">
             <div class="font-semibold text-slate-800">ติดต่อผู้ดูแลระบบ</div>
-            <div id="adminName" class="text-slate-600 truncate"></div>
+            <div id="adminName" class="text-slate-600 truncate">นายสมศักดิ์ ผู้ดูแลระบบ</div>
             <div id="adminTel" class="text-brand-600 font-medium">
-              <a id="phoneLink" href="tel:" class="hover:underline flex items-center gap-1 mt-0.5">
+              <a id="phoneLink" href="tel:081-234-5678" class="hover:underline flex items-center gap-1 mt-0.5">
                 <i class="fa-solid fa-phone text-[10px]"></i>
-                <span>เบอร์โทรศัพท์</span>
+                <span>081-234-5678</span>
               </a>
             </div>
           </div>
@@ -207,10 +466,9 @@
 
       <!-- Right side: Branding Hero Image -->
       <div id="showLoginImage" class="hidden md:flex bg-gradient-to-tr from-brand-700 to-indigo-800 relative items-center justify-center p-8 overflow-hidden">
-        <div class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-overlay"></div>
         <div class="relative z-10 text-white text-center max-w-xs space-y-4">
           <div class="inline-flex p-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
-            <i class="fa-solid fa-shield-halved text-5xl text-blue-200"></i>
+            <i class="fa-solid fa-car text-5xl text-blue-200"></i>
           </div>
           <h2 class="text-xl font-bold">ระบบบริหารยานพาหนะ</h2>
           <p class="text-xs text-blue-100 leading-relaxed">
@@ -222,9 +480,7 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
   <!-- 3. MAIN APPLICATION CONTAINER (contentDiv) -->
-  <!-- ========================================== -->
   <div id="contentDiv" class="flex-1 flex flex-col hidden min-h-screen">
     
     <!-- TOP NAVIGATION BAR -->
@@ -278,7 +534,7 @@
       <div class="fixed inset-y-0 left-0 max-w-xs w-full bg-white shadow-2xl flex flex-col z-50 transform transition-transform duration-300">
         
         <!-- Drawer Header -->
-        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center text-sm shadow">
               <i class="fa-solid fa-bars-staggered"></i>
@@ -417,9 +673,7 @@
     <!-- MAIN VIEW AREA -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
 
-      <!-- ========================================== -->
       <!-- TAB 1: ขออนุญาตใช้รถส่วนกลาง (แบบ 3) -->
-      <!-- ========================================== -->
       <div id="p_tab1" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
@@ -560,9 +814,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 2: บันทึกการใช้รถ (แบบ 4) -->
-      <!-- ========================================== -->
       <div id="p_tab2" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
@@ -597,7 +849,6 @@
               </div>
             </div>
 
-            <!-- Departure details -->
             <div class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label for="departureDate" class="block text-xs font-semibold text-slate-700 mb-1">วันที่ออกเดินทาง <span class="text-rose-500">*</span></label>
@@ -616,7 +867,6 @@
               </div>
             </div>
 
-            <!-- Arrival details -->
             <div class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label for="arrivedDate" class="block text-xs font-semibold text-slate-700 mb-1">วันที่กลับถึง <span class="text-rose-500">*</span></label>
@@ -678,9 +928,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 3: รายงานอุบัติเหตุ (แบบ 5) -->
-      <!-- ========================================== -->
       <div id="p_tab3" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
@@ -694,8 +942,6 @@
           </div>
 
           <form id="carAccidentForm" onsubmit="carAccidentFormSubmit(this)" class="p-6 sm:p-8 space-y-8">
-            
-            <!-- ส่วนที่ 1: ข้อมูลทั่วไป -->
             <div class="space-y-4">
               <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-rose-500"></span>
@@ -750,7 +996,7 @@
               </div>
             </div>
 
-            <!-- ส่วนที่ 2: ฝ่ายตรงข้าม / คู่กรณี -->
+            <!-- ส่วนคู่กรณี -->
             <div class="space-y-4">
               <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
@@ -803,7 +1049,7 @@
               </div>
             </div>
 
-            <!-- ส่วนที่ 3: ผู้บาดเจ็บ & พยาน & เจ้าหน้าที่ -->
+            <!-- ส่วนผู้บาดเจ็บและพยาน -->
             <div class="space-y-4">
               <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -871,9 +1117,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 4: รายละเอียดการซ่อมบำรุง (แบบ 6) -->
-      <!-- ========================================== -->
       <div id="p_tab4" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
@@ -947,9 +1191,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 5: บันทึกการเบิกน้ำมัน -->
-      <!-- ========================================== -->
       <div id="p_tab5" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
@@ -987,7 +1229,6 @@
               </div>
             </div>
 
-            <!-- Dynamic field for other machine type -->
             <div id="oilWithdrawMachineTypeOtherDiv" class="hidden">
               <label for="oilWithdrawMachineTypeOther" class="block text-xs font-semibold text-slate-700 mb-1.5">ระบุเครื่องจักรอื่น ๆ <span class="text-rose-500">*</span></label>
               <input type="text" name="oilWithdrawMachineTypeOther" id="oilWithdrawMachineTypeOther" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5">
@@ -1041,9 +1282,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 6: อนุญาตให้ใช้รถ (รายการคำขอ & อนุมัติ) -->
-      <!-- ========================================== -->
       <div id="p_tab6" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
@@ -1068,9 +1307,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 7: อนุมัติให้เบิกน้ำมัน -->
-      <!-- ========================================== -->
       <div id="p_tab7" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-8 text-center">
           <div class="w-16 h-16 rounded-full bg-blue-50 text-brand-600 flex items-center justify-center mx-auto text-2xl mb-4">
@@ -1081,9 +1318,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 8: ข้อมูลส่วนตัว -->
-      <!-- ========================================== -->
       <div id="p_tab8" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden max-w-4xl mx-auto">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -1100,23 +1335,21 @@
           </div>
 
           <div class="p-6 sm:p-8 space-y-6">
-            <!-- Profile Avatar & Signature previews -->
             <div class="flex flex-col sm:flex-row items-center justify-around gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
               <div class="text-center">
-                <img name="profileImage" id="profileImage" src="https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW" alt="Profile"
+                <img id="profileImage" name="profileImage" src="https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW" alt="Profile"
                   class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md mx-auto mb-2">
                 <span class="text-xs font-semibold text-slate-600">รูปภาพโปรไฟล์</span>
               </div>
               <div class="text-center">
                 <div class="h-28 w-48 bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center shadow-inner mx-auto mb-2">
-                  <img name="signatureImage" id="signatureImage" src="https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx" alt="Signature"
+                  <img id="signatureImage" name="signatureImage" src="https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx" alt="Signature"
                     class="max-h-full max-w-full object-contain">
                 </div>
                 <span class="text-xs font-semibold text-slate-600">ลายมือชื่ออิเล็กทรอนิกส์</span>
               </div>
             </div>
 
-            <!-- Profile Details Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label class="block text-xs text-slate-500 mb-1">Username</label>
@@ -1148,7 +1381,7 @@
               </div>
               <div>
                 <label class="block text-xs text-slate-500 mb-1">อีเมล</label>
-                <input type="text" name="emailP" id="emailP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+                <input type="email" name="emailP" id="emailP" readonly class="w-full text-xs bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
               </div>
               <div>
                 <label class="block text-xs text-slate-500 mb-1">LINE Notify Token</label>
@@ -1163,9 +1396,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 9: ข้อมูลผู้ใช้งานระบบ (Admin only) -->
-      <!-- ========================================== -->
       <div id="p_tab9" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
@@ -1190,9 +1421,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 10: ข้อมูลรถในระบบ (Admin only) -->
-      <!-- ========================================== -->
       <div id="p_tab10" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
@@ -1217,9 +1446,7 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- TAB 11: การตั้งค่าข้อมูลทั่วไป (Admin only) -->
-      <!-- ========================================== -->
       <div id="p_tab11" class="page-tab hidden">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
@@ -1233,7 +1460,6 @@
           </div>
 
           <form id="editOrganizationDataForm" onsubmit="editOrganizationDataFormSubmit(this)" class="p-6 sm:p-8 space-y-6">
-            <!-- Organization Info -->
             <div class="space-y-4">
               <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-100 flex items-center gap-2">
                 <i class="fa-solid fa-building text-brand-600"></i>
@@ -1363,9 +1589,7 @@
     </main>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 4. MODALS (Popups)                         -->
-  <!-- ========================================== -->
+  <!-- MODALS -->
 
   <!-- MODAL: เพิ่มข้อมูลรถใหม่ (newCarDataFormModal) -->
   <div id="newCarDataFormModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop-custom">
@@ -1507,7 +1731,6 @@
         </button>
       </div>
       <form id="newUserDataForm" onsubmit="newUserDataFormSubmit(this)" class="p-6 overflow-y-auto space-y-4">
-        <!-- Previews -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl">
           <div class="text-center">
             <img name="newUserProfileImagePreview" id="newUserProfileImagePreview" src="https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW" class="w-20 h-20 rounded-full object-cover mx-auto mb-2 border shadow-sm">
@@ -1592,7 +1815,6 @@
         </button>
       </div>
       <form id="updateUserDataForm" onsubmit="updateUserDataFormSubmit(this)" class="p-6 overflow-y-auto space-y-4">
-        <!-- Previews -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl">
           <div class="text-center">
             <img name="updateUserProfileImagePreview" id="updateUserProfileImagePreview" src="https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW" class="w-20 h-20 rounded-full object-cover mx-auto mb-2 border shadow-sm">
@@ -1805,30 +2027,21 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 5. JAVASCRIPT APPLICATION LOGIC            -->
-  <!-- ========================================== -->
+  <!-- 4. JAVASCRIPT APPLICATION LOGIC -->
   <script>
-    // --- Global State ---
     let userDataArray = null;
     let url = [];
 
-    // --- Modal Helper Functions (Tailwind Compatible) ---
     function openTailwindModal(modalId) {
       const el = document.getElementById(modalId);
-      if (el) {
-        el.classList.remove('hidden');
-      }
+      if (el) el.classList.remove('hidden');
     }
 
     function closeTailwindModal(modalId) {
       const el = document.getElementById(modalId);
-      if (el) {
-        el.classList.add('hidden');
-      }
+      if (el) el.classList.add('hidden');
     }
 
-    // jQuery modal shim for backwards-compatibility
     if (window.jQuery) {
       jQuery.fn.modal = function(action) {
         return this.each(function() {
@@ -1841,7 +2054,6 @@
       };
     }
 
-    // --- Loading Spinner UI helper ---
     function showGlobalSpinner(title = 'กำลังประมวลผล...', sub = 'โปรดรอสักครู่ ระบบกำลังสื่อสารกับฐานข้อมูล') {
       const modal = document.getElementById('spinnerLoadingModal');
       const t = document.getElementById('spinnerTextTitle');
@@ -1856,7 +2068,6 @@
       if (modal) modal.classList.add('hidden');
     }
 
-    // Password visibility toggle
     function togglePasswordVisibility(inputId, btn) {
       const input = document.getElementById(inputId);
       const icon = btn.querySelector('i');
@@ -1871,7 +2082,6 @@
       }
     }
 
-    // Sidebar drawer toggle
     function toggleSidebar(open) {
       const sidebar = document.getElementById('offcanvasMenuScrolling');
       if (open) {
@@ -1881,7 +2091,6 @@
       }
     }
 
-    // --- Tab Navigation ---
     function hideAllPages() {
       for (let i = 1; i <= 11; i++) {
         const page = document.getElementById('p_tab' + i);
@@ -1912,7 +2121,6 @@
       navTabClick(num);
     }
 
-    // Open external report Google Sheets
     function getURLSuccess(urlFromSheet) {
       url = urlFromSheet;
     }
@@ -1930,16 +2138,21 @@
       } else {
         Swal.fire({
           icon: 'info',
-          title: 'ไม่พบลิงก์รายงาน',
-          text: 'กรุณาตั้งค่า URL รายงานในเมนูตั้งค่าข้อมูลทั่วไป'
+          title: 'จำลองการเปิดรายงาน Google Sheets',
+          text: 'ในระบบจริงจะเปิดไปยังชีตภายนอกที่กำหนดไว้'
         });
       }
     }
 
-    // --- Onload Initialization ---
+    function demoQuickLogin(role) {
+      document.getElementById('username').value = role;
+      document.getElementById('password').value = '1234';
+      document.getElementById('btnLogin').click();
+    }
+
     window.onload = function() {
-      showGlobalSpinner('กำลังโหลดระบบ...', 'กำลังดึงการตั้งค่าและตรวจสอบข้อมูลการเข้าสู่ระบบ');
-      userDataArray = JSON.parse(localStorage.getItem("userDataArrayLS"));
+      showGlobalSpinner('กำลังโหลดระบบจำลอง...', 'กำลังจำลองการดึงการตั้งค่า');
+      userDataArray = JSON.parse(localStorage.getItem("userDataArrayLS_Demo"));
       google.script.run.withSuccessHandler(showResult).getSetting();
       google.script.run.withSuccessHandler(getURLSuccess).getReportURL();
     };
@@ -1979,19 +2192,23 @@
         google.script.run.withSuccessHandler(getCarDataForUserSuccess).getCarDataForUser();
         google.script.run.withSuccessHandler(getCreditLimitSuccess).getCreditLimit();
 
+        // Reset visibility
+        ['tab6', 'tab7', 'tab9', 'tab10', 'tab11'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = "";
+        });
+
         if (userDataArray[5] === 'Admin') {
           google.script.run.withSuccessHandler(getUserDataForAdminSuccess).getUserDataForAdmin();
           google.script.run.withSuccessHandler(getCarDataForAdminSuccess).getCarDataForAdmin();
           google.script.run.withSuccessHandler(getOrgDataForAdminSuccess).getOrgDataForAdmin();
           google.script.run.withSuccessHandler(getPermissionDataSuccess).getPermissionData(userDataArray);
         } else if (userDataArray[5] === 'User' && userDataArray[6] != 1) {
-          // Approvers (level 2 or 3)
           document.getElementById('tab9').style.display = "none";
           document.getElementById('tab10').style.display = "none";
           document.getElementById('tab11').style.display = "none";
           google.script.run.withSuccessHandler(getPermissionDataSuccess).getPermissionData(userDataArray);
         } else {
-          // Regular users
           document.getElementById('tab6').style.display = "none";
           document.getElementById('tab7').style.display = "none";
           document.getElementById('tab9').style.display = "none";
@@ -2005,9 +2222,6 @@
       if (!setting || setting.length === 0) return;
       var phoneNumber = setting[5];
 
-      if (setting[0]) {
-        document.getElementById('showLogo').innerHTML = '<img src="https://lh3.googleusercontent.com/d/' + setting[0] + '" class="h-16 w-auto mx-auto object-contain">';
-      }
       document.getElementById('organizationName').innerHTML = setting[1] || '';
       document.getElementById('headerOrgName').innerHTML = setting[1] || '';
       document.getElementById('organizationAddress').innerHTML = 'อำเภอ' + (setting[2] || '') + ' จังหวัด' + (setting[3] || '');
@@ -2018,22 +2232,11 @@
         document.getElementById('phoneLink').innerHTML = '<i class="fa-solid fa-phone text-[10px]"></i> ' + phoneNumber;
       }
 
-      if (setting[6]) {
-        document.getElementById('showLoginImage').innerHTML =
-          '<img class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/d/' + setting[6] + '">' +
-          '<div class="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"></div>' +
-          '<div class="relative z-10 text-white text-center p-8 space-y-3">' +
-          '<div class="inline-flex p-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl mb-2"><i class="fa-solid fa-car text-4xl text-blue-200"></i></div>' +
-          '<h2 class="text-2xl font-bold">' + (setting[1] || 'ระบบขออนุญาตใช้รถ') + '</h2>' +
-          '<p class="text-xs text-blue-100 max-w-xs mx-auto leading-relaxed">ระบบจองรถส่วนกลาง บันทึกการเดินทาง เบิกจ่ายน้ำมัน และซ่อมบำรุง</p></div>';
-      }
-
       document.getElementById('dearHeaderPermission').value = 'ผู้อำนวยการ' + (setting[1] || '');
       document.getElementById('dearHeader').value = 'ผู้อำนวยการ' + (setting[1] || '');
       document.getElementById('sectionHeaderPermission').value = setting[1] || '';
     }
 
-    // --- Authentication ---
     function login(obj, evt) {
       if (evt && evt.preventDefault) evt.preventDefault();
       else if (window.event && window.event.preventDefault) window.event.preventDefault();
@@ -2045,16 +2248,25 @@
           Swal.showLoading();
         }
       });
-      google.script.run
-        .withSuccessHandler(loginSuccess)
-        .withFailureHandler(function(err) {
-          Swal.fire({
-            icon: 'error',
-            title: 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล',
-            text: err ? (err.message || String(err)) : 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้'
-          });
-        })
-        .userLogin(obj);
+
+      try {
+        google.script.run
+          .withSuccessHandler(loginSuccess)
+          .withFailureHandler(function(err) {
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล',
+              text: err ? (err.message || String(err)) : 'ไม่สามารถเชื่อมต่อได้'
+            });
+          })
+          .userLogin(obj);
+      } catch (e) {
+        console.error("Login call error:", e);
+        // Fallback for safety
+        setTimeout(function() {
+          loginSuccess(MOCK_DB.users['admin']);
+        }, 300);
+      }
     }
 
     function loginSuccess(userData) {
@@ -2068,13 +2280,13 @@
       } else {
         Swal.fire({
           icon: 'success',
-          title: 'เข้าสู่ระบบสำเร็จ',
+          title: 'เข้าสู่ระบบสำเร็จ (โหมดจำลอง)',
           timer: 1000,
           showConfirmButton: false
         });
 
-        localStorage.setItem("userDataArrayLS", JSON.stringify(userData));
-        userDataArray = JSON.parse(localStorage.getItem("userDataArrayLS"));
+        localStorage.setItem("userDataArrayLS_Demo", JSON.stringify(userData));
+        userDataArray = JSON.parse(localStorage.getItem("userDataArrayLS_Demo"));
 
         document.getElementById('p_login').classList.add('hidden');
         document.getElementById('contentDiv').classList.remove('hidden');
@@ -2102,6 +2314,12 @@
 
         google.script.run.withSuccessHandler(getCarDataForUserSuccess).getCarDataForUser();
         google.script.run.withSuccessHandler(getCreditLimitSuccess).getCreditLimit();
+
+        // Reset visibility
+        ['tab6', 'tab7', 'tab9', 'tab10', 'tab11'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = "";
+        });
 
         if (userDataArray[5] === 'Admin') {
           google.script.run.withSuccessHandler(getUserDataForAdminSuccess).getUserDataForAdmin();
@@ -2134,27 +2352,13 @@
         cancelButtonColor: '#64748b'
       }).then((result) => {
         if (result.isConfirmed) {
-          localStorage.removeItem("userDataArrayLS");
-          Swal.fire({
-            title: 'กำลังออกจากระบบ...',
-            allowOutsideClick: false,
-            didOpen: () => {
-              Swal.showLoading();
-            }
-          });
-
-          google.script.run.withSuccessHandler((url) => {
-            if (url) {
-              window.open(url, '_top');
-            } else {
-              location.reload();
-            }
-          }).getURL();
+          localStorage.removeItem("userDataArrayLS_Demo");
+          userDataArray = null;
+          location.reload();
         }
       });
     }
 
-    // --- Profile & User Data ---
     function showPersonalData() {
       if (!userDataArray) return;
       document.getElementById('usernameP').value = userDataArray[0] || '';
@@ -2166,22 +2370,7 @@
       document.getElementById('levelP').value = userDataArray[6] || '';
       document.getElementById('emailP').value = userDataArray[7] || '';
       document.getElementById('tokenP').value = userDataArray[8] || '';
-
-      if (!userDataArray[9] || userDataArray[9] === "") {
-        document.getElementById('profileImage').src = 'https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW';
-      } else {
-        var match = userDataArray[9].match(/\/d\/([\w-]{25,})/);
-        var id = match ? match[1] : userDataArray[9];
-        document.getElementById('profileImage').src = 'https://lh3.googleusercontent.com/d/' + id;
-      }
-
-      if (!userDataArray[10] || userDataArray[10] === "") {
-        document.getElementById('signatureImage').src = 'https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx';
-      } else {
-        var match2 = userDataArray[10].match(/\/d\/([\w-]{25,})/);
-        var id2 = match2 ? match2[1] : userDataArray[10];
-        document.getElementById('signatureImage').src = 'https://lh3.googleusercontent.com/d/' + id2;
-      }
+      document.getElementById('userPositionReplaceP').value = userDataArray[11] || '';
     }
 
     function updatePersonalDataForm() {
@@ -2191,7 +2380,6 @@
       google.script.run.withSuccessHandler(showUserDataModal).getUserDataUpdate(username);
     }
 
-    // --- Cars Dropdown Populating ---
     function getCarDataForUserSuccess(values) {
       if (!values) return;
       let targets = ['carPermissionRegisNumber', 'carRegisNumber', 'accidentCarRegisNumber', 'carRegisNumberMaintenance', 'oilWithdrawMachineType'];
@@ -2200,7 +2388,6 @@
         let select = document.getElementById(id);
         if (!select) return;
 
-        // Keep initial option
         let firstOpt = select.options[0];
         let otherOpt = (id === 'oilWithdrawMachineType') ? select.querySelector('option[value="อื่น ๆ"]') : null;
         select.innerHTML = '';
@@ -2235,7 +2422,6 @@
       }
     }
 
-    // --- Form Submissions ---
     function carUsagePermissionRequestFormSubmit(obj) {
       event.preventDefault();
       Swal.fire({
@@ -2274,7 +2460,7 @@
 
       Swal.fire({
         icon: 'success',
-        title: 'บันทึกคำร้องสำเร็จ!',
+        title: 'บันทึกคำร้องสำเร็จ! (โหมดจำลอง)',
         timer: 1500,
         showConfirmButton: false
       });
@@ -2306,7 +2492,7 @@
       document.getElementById('carUsageForm').reset();
       Swal.fire({
         icon: 'success',
-        title: 'บันทึกการใช้รถสำเร็จ!',
+        title: 'บันทึกการใช้รถสำเร็จ! (โหมดจำลอง)',
         timer: 1500,
         showConfirmButton: false
       });
@@ -2415,7 +2601,6 @@
       google.script.run.withSuccessHandler(getCreditLimitSuccess).getCreditLimit();
     }
 
-    // --- Approvals & Permissions DataTables ---
     function getPermissionDataSuccess(permissionData) {
       $('#data_table_carPermission').DataTable({
         destroy: true,
@@ -2505,17 +2690,15 @@
         document.getElementById('user2Allow').classList.remove('hidden');
       } else if (userDataArray[5] === "User" && userDataArray[6] == 3) {
         document.getElementById('user3Allow').classList.remove('hidden');
+      } else if (userDataArray[5] === "Admin") {
+        document.getElementById('user2Allow').classList.remove('hidden');
+        document.getElementById('user3Allow').classList.remove('hidden');
       }
     }
 
     function user2ApproveSwal() {
       event.preventDefault();
       let requestId = document.getElementById('requestIdModal').value;
-      let user2Signature = userDataArray[10];
-      let user2FullName = userDataArray[2];
-      let user2Section = userDataArray[4];
-      let user2SectionReplace = userDataArray[11] || '';
-
       Swal.fire({
         icon: "question",
         title: "ยืนยันการเสนอเพื่อพิจารณา?",
@@ -2530,7 +2713,7 @@
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
           });
-          google.script.run.withSuccessHandler(updateApproveSuccess).user2Approve(requestId, user2Signature, user2FullName, user2Section, user2SectionReplace);
+          google.script.run.withSuccessHandler(updateApproveSuccess).user2Approve(requestId);
         }
       });
     }
@@ -2538,7 +2721,6 @@
     function user2NotApproveSwal() {
       event.preventDefault();
       let requestId = document.getElementById('requestIdModal').value;
-
       Swal.fire({
         icon: "warning",
         title: "ยืนยันการยกเลิกคำร้อง?",
@@ -2561,11 +2743,6 @@
     function user3ApproveSwal() {
       event.preventDefault();
       let requestId = document.getElementById('requestIdModal').value;
-      let user3Signature = userDataArray[10];
-      let user3FullName = userDataArray[2];
-      let user3Section = userDataArray[4];
-      let approveWord = 'อนุญาต';
-
       Swal.fire({
         icon: "question",
         title: "ยืนยันการอนุญาตให้ใช้รถ?",
@@ -2580,7 +2757,7 @@
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
           });
-          google.script.run.withSuccessHandler(updateApproveSuccess).user3Approve(approveWord, requestId, user3Signature, user3FullName, user3Section);
+          google.script.run.withSuccessHandler(updateApproveSuccess).user3Approve('อนุญาต', requestId);
         }
       });
     }
@@ -2588,9 +2765,6 @@
     function user3NotApproveSwal() {
       event.preventDefault();
       let requestId = document.getElementById('requestIdModal').value;
-      let user3Signature = userDataArray[10];
-      let approveWord = 'ไม่อนุญาต';
-
       Swal.fire({
         icon: "warning",
         title: "ยืนยัน ไม่อนุญาต ให้ใช้รถ?",
@@ -2605,7 +2779,7 @@
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
           });
-          google.script.run.withSuccessHandler(updateApproveSuccess).user3Approve(approveWord, requestId, user3Signature);
+          google.script.run.withSuccessHandler(updateApproveSuccess).user3Approve('ไม่อนุญาต', requestId);
         }
       });
     }
@@ -2614,14 +2788,13 @@
       closeTailwindModal('viewCarPermissionModal');
       Swal.fire({
         icon: 'success',
-        title: 'อัปเดตข้อมูลสำเร็จ!',
+        title: 'อัปเดตข้อมูลสำเร็จ! (โหมดจำลอง)',
         timer: 1500,
         showConfirmButton: false
       });
       refreshCarPermission();
     }
 
-    // --- Queue Table ---
     function viewQueue(el) {
       let carRegisNumber = el.closest('tr').cells[3].innerText.trim();
       openQueueTable(carRegisNumber);
@@ -2673,7 +2846,6 @@
       });
     }
 
-    // --- Admin: User Management ---
     function getUserDataForAdminSuccess(userDataForAdmin) {
       $('#data_table_userDataForAdmin').DataTable({
         destroy: true,
@@ -2719,8 +2891,6 @@
 
     function openNewUserDataForm() {
       document.getElementById('newUserDataForm').reset();
-      document.getElementById("newUserProfileImagePreview").src = "https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW";
-      document.getElementById("newUserSignatureImagePreview").src = "https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx";
       openTailwindModal('newUserDataFormModal');
     }
 
@@ -2806,7 +2976,7 @@
       closeTailwindModal('newUserDataFormModal');
       Swal.fire({
         icon: 'success',
-        title: 'เพิ่มผู้ใช้ใหม่สำเร็จ!',
+        title: 'เพิ่มผู้ใช้ใหม่สำเร็จ! (โหมดจำลอง)',
         timer: 1500,
         showConfirmButton: false
       });
@@ -2816,17 +2986,8 @@
     function updateUserDataForAdmin(el) {
       let username = el.closest('tr').cells[0].innerText.trim();
       document.getElementById('updateUserDataForm').reset();
-
-      if (userDataArray && username === userDataArray[0]) {
-        Swal.fire({
-          icon: 'info',
-          title: 'ข้อแนะนำ',
-          text: 'โปรดดำเนินการแก้ไขข้อมูลของท่านที่เมนู ข้อมูลส่วนตัว'
-        });
-      } else {
-        showGlobalSpinner('กำลังดึงข้อมูลผู้ใช้...');
-        google.script.run.withSuccessHandler(showUserDataModal).getUserDataUpdate(username);
-      }
+      showGlobalSpinner('กำลังดึงข้อมูลผู้ใช้...');
+      google.script.run.withSuccessHandler(showUserDataModal).getUserDataUpdate(username);
     }
 
     function showUserDataModal(userModalResult) {
@@ -2845,25 +3006,8 @@
       document.getElementById('updateUserLevel').value = userModalResult[6] || '1';
       document.getElementById('updateUserEmail').value = userModalResult[7] || '';
       document.getElementById('updateUserToken').value = userModalResult[8] || '';
-
-      if (!userModalResult[9] || userModalResult[9] === "") {
-        document.getElementById("updateUserProfileImagePreview").src = "https://lh3.googleusercontent.com/d/1q1CjoEWMwGw9WLCOKhJGghCCUOjPJLSW";
-      } else {
-        var match = userModalResult[9].match(/\/d\/([\w-]{25,})/);
-        var id = match ? match[1] : userModalResult[9];
-        document.getElementById("updateUserProfileImagePreview").src = "https://lh3.googleusercontent.com/d/" + id;
-      }
-
-      if (!userModalResult[10] || userModalResult[10] === "") {
-        document.getElementById("updateUserSignatureImagePreview").src = "https://lh3.googleusercontent.com/d/1UfYvUt0VgM3Ju-fX52DgBeGOXgSeJJYx";
-      } else {
-        var match2 = userModalResult[10].match(/\/d\/([\w-]{25,})/);
-        var id2 = match2 ? match2[1] : userModalResult[10];
-        document.getElementById("updateUserSignatureImagePreview").src = "https://lh3.googleusercontent.com/d/" + id2;
-      }
-
-      if (userModalResult[11] && document.getElementById('updateUserPositionReplace')) {
-        document.getElementById('updateUserPositionReplace').value = userModalResult[11];
+      if (document.getElementById('updateUserPositionReplace')) {
+        document.getElementById('updateUserPositionReplace').value = userModalResult[11] || '';
       }
     }
 
@@ -2896,18 +3040,9 @@
         timer: 1500,
         showConfirmButton: false
       });
-
       refreshUserDataForAdmin();
-
-      if (resultUpdate && userDataArray && resultUpdate[0] === userDataArray[0]) {
-        localStorage.setItem("userDataArrayLS", JSON.stringify(resultUpdate));
-        userDataArray = JSON.parse(localStorage.getItem("userDataArrayLS"));
-        document.getElementById('usernameShow').innerHTML = userDataArray[2];
-        showPersonalData();
-      }
     }
 
-    // --- Admin: Car Management ---
     function getCarDataForAdminSuccess(carDataForAdmin) {
       $('#data_table_carDataForAdmin').DataTable({
         destroy: true,
@@ -2981,7 +3116,6 @@
         showConfirmButton: false
       });
       refreshCarDataForAdmin();
-      google.script.run.withSuccessHandler(getCarDataForUserSuccess).getCarDataForUser();
     }
 
     function updateCarDataForAdmin(el) {
@@ -3038,10 +3172,8 @@
         showConfirmButton: false
       });
       refreshCarDataForAdmin();
-      google.script.run.withSuccessHandler(getCarDataForUserSuccess).getCarDataForUser();
     }
 
-    // --- Admin: Settings ---
     function getOrgDataForAdminSuccess(orgDataForAdmin) {
       if (!orgDataForAdmin) return;
       document.getElementById('organizationLogoURLForAdmin').value = orgDataForAdmin[0] || '';
@@ -3051,18 +3183,13 @@
       document.getElementById('organizationAdminNameForAdmin').value = orgDataForAdmin[4] || '';
       document.getElementById('organizationAdminTelForAdmin').value = orgDataForAdmin[5] || '';
       document.getElementById('organizationLogInImageURLForAdmin').value = orgDataForAdmin[6] || '';
-
       document.getElementById('lineGroupToken').value = orgDataForAdmin[8] || '';
-
       document.getElementById('profileImageFolderURLForAdmin').value = orgDataForAdmin[10] || '';
       document.getElementById('signatureImageFolderURLForAdmin').value = orgDataForAdmin[11] || '';
-
       document.getElementById('form3TemplateURLForAdmin').value = orgDataForAdmin[13] || '';
       document.getElementById('form3FolderURLForAdmin').value = orgDataForAdmin[14] || '';
-
       document.getElementById('form5TemplateURLForAdmin').value = orgDataForAdmin[16] || '';
       document.getElementById('form5FolderURLForAdmin').value = orgDataForAdmin[17] || '';
-
       document.getElementById('execURL').value = orgDataForAdmin[19] || '';
       document.getElementById('form1URL').value = orgDataForAdmin[20] || '';
       document.getElementById('form2URL').value = orgDataForAdmin[21] || '';
@@ -3095,12 +3222,10 @@
     function editOrganizationDataSuccess() {
       Swal.fire({
         icon: 'success',
-        title: 'อัปเดตการตั้งค่าสำเร็จ!',
+        title: 'อัปเดตการตั้งค่าสำเร็จ! (โหมดจำลอง)',
         timer: 1500,
         showConfirmButton: false
       });
-      google.script.run.withSuccessHandler(showResult).getSetting();
-      google.script.run.withSuccessHandler(getURLSuccess).getReportURL();
     }
   </script>
 
